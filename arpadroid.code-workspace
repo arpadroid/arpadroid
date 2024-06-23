@@ -1,0 +1,35 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../lists"
+		},
+		{
+			"path": "../messages"
+		},
+		{
+			"path": "../navigation"
+		},
+		{
+			"path": "../application"
+		},
+		{
+			"path": "../forms"
+		},
+		{
+			"path": "../i18n"
+		},
+		{
+			"path": "../stylesheet-bundler"
+		},
+		{
+			"path": "../tools"
+		},
+		{
+			"path": "../ui"
+		}
+	],
+	"settings": {}
+}
