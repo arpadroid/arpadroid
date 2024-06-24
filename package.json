@@ -28,18 +28,21 @@
         "@babel/core": "^7.24.7",
         "@babel/plugin-syntax-import-assertions": "^7.24.7",
         "@babel/preset-env": "^7.24.7",
-        "yargs": "^17.7.2",
         "@rollup/plugin-alias": "^5.1.0",
         "@rollup/plugin-babel": "^6.0.4",
+        "@rollup/plugin-json": "^6.1.0",
         "@rollup/plugin-multi-entry": "^6.0.1",
         "@rollup/plugin-node-resolve": "^15.2.3",
         "@rollup/plugin-replace": "^5.0.7",
         "@rollup/plugin-terser": "^0.4.4",
+        "@storybook/blocks": "^8.1.10",
         "rollup": "^4.18.0",
+        "rollup-plugin-bundle-stats": "^4.13.2",
         "rollup-plugin-copy": "^3.5.0",
         "rollup-plugin-dts": "^6.1.1",
         "rollup-plugin-peer-deps-external": "^2.2.4",
-        "rollup-plugin-watch": "^1.0.4"
+        "rollup-plugin-watch": "^1.0.4",
+        "yargs": "^17.7.2"
     },
     "peerDependencies": {
         "@arpadroid/application": "file:../application",

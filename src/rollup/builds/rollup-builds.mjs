@@ -1,5 +1,4 @@
 import fs from 'fs';
-import alias from '@rollup/plugin-alias';
 import multiEntry from '@rollup/plugin-multi-entry';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import watch from 'rollup-plugin-watch';
@@ -7,10 +6,11 @@ import { dts } from 'rollup-plugin-dts';
 import terser from '@rollup/plugin-terser';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import buildStyles from '../plugins/buildStyles/buildStyles.mjs';
+import { bundleStats } from 'rollup-plugin-bundle-stats';
 
-const WATCH = Boolean(process.env['watch']);
 const SLIM = Boolean(process.env['slim']);
 const PROD = Boolean(process.env['production']);
+const WATCH = !PROD && Boolean(process.env['watch']);
 const cwd = process.cwd();
 
 export function getDependencies() {
@@ -43,10 +43,11 @@ export function getPlugins(projectName, deps = getDependencies()) {
         : [
               nodeResolve({ browser: true, preferBuiltins: false }),
               buildStyles(projectName),
-              !PROD && WATCH && fs.existsSync(cwd + '/src/themes') && watch({ dir: 'src/themes' }),
+              WATCH && fs.existsSync(cwd + '/src/themes') && watch({ dir: 'src/themes' }),
+              // watch({ dir: 'node_modules/@arpadroid/ui/dist' })
               deps.length && multiEntry()
           ];
-    return [terser({ keep_classnames: true }), ...plugins].filter(Boolean);
+    return [terser({ keep_classnames: true }), ...plugins, bundleStats()].filter(Boolean);
 }
 
 export function getOutput(projectName) {
@@ -85,7 +86,7 @@ export function getBuild(projectName, buildName, config) {
     const appBuild = rollupBuilds[buildName](projectName, config);
     const typesBuild = getTypesBuild();
     const build = [appBuild, typesBuild].filter(Boolean);
-    return { build, plugins: appBuild.plugins };
+    return { build, plugins: appBuild.plugins, appBuild, typesBuild };
 }
 
 export default rollupBuilds;

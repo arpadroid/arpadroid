@@ -34,6 +34,9 @@ class projectBuilder {
         );
         
         Object.values(commands).forEach(cmd => cmdArray.push(cmd));
+        if (cmdArray.length === 0) {
+            return;
+        }
         const cmd = cmdArray.join(sequential ? ' && ' : ' & ') + ' && cd ' + originalCwd;
         return execSync(cmd, { stdio: 'inherit' });
     }

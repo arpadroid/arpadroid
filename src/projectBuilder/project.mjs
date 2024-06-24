@@ -65,7 +65,7 @@ class Project {
     // #region ACCESSORS
 
     hasStyles() {
-        return fs.existsSync(this.getThemesPath());
+        return this.getThemes().length > 0;
     }
 
     getThemesPath() {
@@ -73,7 +73,8 @@ class Project {
     }
 
     getThemes() {
-        return readdirSync(this.getThemesPath());
+        const path = this.getThemesPath();
+        return fs.existsSync(path) ? readdirSync(path) : [];
     }
 
     getArpadroidPackages(sort = []) {
@@ -118,6 +119,9 @@ class Project {
     }
 
     async buildDependencies(config = {}) {
+        if (SLIM) {
+            return true;
+        }
         await this.builder.buildPackages({
             exceptions: this.name,
             slim: true,
@@ -138,7 +142,6 @@ class Project {
         if (WATCH) {
             cmd += ' -w';
         }
-        console.log('cmd', cmd);
         return execSync(cmd, { stdio: 'inherit' });
     }
 
@@ -165,6 +168,7 @@ class Project {
         if (typeof patterns === 'string') {
             patterns = patterns.split(',').map(pattern => pattern.trim());
         }
+        patterns = patterns.map(pattern => `${this.path}/src/${pattern}`);
         const bundler = new StylesheetBundler.ThemesBundler({
             exportPath: cwd + '/dist/themes',
             minify: MINIFY,
@@ -207,6 +211,10 @@ class Project {
     }
 
     getStyleBuildFiles() {
+        const hasStyles = this.hasStyles();
+        if (!this.hasStyles()) {
+            return false;
+        }
         const minifiedDeps = {};
         this.getStylePackages().forEach(dep => {
             const project = new Project(dep);
@@ -218,7 +226,7 @@ class Project {
                 !minifiedDeps[theme] && (minifiedDeps[theme] = []);
                 minifiedDeps[theme].push(`${project.path}/dist/themes/${theme}/${theme}.min.css`);
             });
-            if (dep === 'ui') {
+            if (dep === 'ui' && this.name !== 'ui') {
                 const fontsPath = `${this.path}/dist/themes/default/fonts`;
                 cpSync(`${project.path}/dist/themes/default/fonts`, fontsPath, { recursive: true });
                 cpSync(`${project.path}/dist/material-symbols`, `${this.path}/dist/material-symbols`, {
