@@ -4,11 +4,11 @@ import { rollup, watch as rollupWatch } from 'rollup';
 import { readFileSync, existsSync, writeFileSync, cpSync, rmSync, readdirSync, mkdirSync } from 'fs';
 import alias from '@rollup/plugin-alias';
 import fs from 'fs';
-import path, { resolve } from 'path';
+import path from 'path';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
 import StylesheetBundler from '@arpadroid/stylesheet-bundler';
-import { execSync } from 'child_process';
+import { spawn } from 'child_process';
 import chalk from 'chalk';
 
 const cwd = process.cwd();
@@ -17,7 +17,6 @@ const SLIM = Boolean(argv.slim ?? process.env.slim);
 const MINIFY = Boolean(argv.minify ?? process.env.minify);
 const WATCH = Boolean(argv.watch ?? process.env.watch);
 const STORYBOOK_PORT = argv['storybook'] ?? process.env['storybook'];
-const DEPS = argv.deps;
 const STYLE_PATTERNS = argv['style-patterns'];
 const DEPENDENCY_SORT = ['tools', 'i18n', 'application', 'ui', 'lists', 'navigation', 'messages', 'form'];
 const STYLE_SORT = ['ui', 'lists', 'navigation', 'messages', 'form'];
@@ -141,7 +140,7 @@ class Project {
         }
         console.log(chalk.cyan(`Running ${chalk.magenta(this.name)} storybook...`));
         const cmd = await this.getStorybookCmd();
-        execSync(cmd, { stdio: 'inherit' });
+        spawn(cmd, { shell: true, stdio: 'inherit', cwd: this.path });
         console.log(chalk.green(`Finished running ${chalk.magenta(this.name)} storybook.`));
     }
 
@@ -165,14 +164,13 @@ class Project {
     async buildDependencies(config = {}) {
         console.log(chalk.cyan(`Building ${chalk.magenta(this.name)} dependencies...`), config);
         const projects = this.createDependencyInstances();
+        process.env.arpadroid_slim = true;
         const rv = await Promise.all(
             projects.map(async project => {
                 const config = {
                     slim: true,
                     isDependency: true
                 };
-                process.env.arpadroid_slim = true;
-
                 return await project.build(config);
             })
         ).catch(err => {
@@ -248,8 +246,8 @@ class Project {
         return `${this.path}/${input}`;
     }
 
-    watch(rollupConfig, { watch = WATCH }) {
-        if (!watch) {
+    watch(rollupConfig, { watch = WATCH, slim }) {
+        if (!watch) { // || slim
             return;
         }
         this.watcher = rollupWatch(rollupConfig);
@@ -261,6 +259,8 @@ class Project {
                 );
             } else if (event.code === 'END') {
                 console.log(chalk.green(`Stopped watching ${chalk.magenta(this.name)}`));
+            } else {
+                console.log(chalk.blue(`Got watch event ${chalk.magenta(this.name)}...`), event);
             }
         });
         this.watcher.on('event', ({ result }) => result?.close());
@@ -272,9 +272,6 @@ class Project {
     buildStyles(config = {}) {
         const slim = config.slim ?? SLIM;
         if (slim) return;
-        console.log(chalk.cyan(`Building ${chalk.magenta(this.name)} styles...`), {
-            slim
-        });
         const minifiedDeps = this.getStyleBuildFiles() ?? [];
         Object.entries(minifiedDeps).forEach(([theme, files]) => this.buildTheme(theme, files));
         if (this.getArpadroidDependencies().includes('ui')) {
