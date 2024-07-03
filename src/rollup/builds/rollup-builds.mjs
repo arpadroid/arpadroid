@@ -164,7 +164,7 @@ export function getFatPlugins(project, config) {
         nodeResolve({ browser: true, preferBuiltins: false }),
         watch && fs.existsSync(path.join(cwd, 'src', 'themes')) && rollupWatch({ dir: 'src/themes' }),
         /** @todo - Polish the watch strategy as some dependencies do not trigger Hot Module Replacement or even automatic browser page reload when changed. */
-        watch && watchDeps(project, config),
+        // watch && watchDeps(project, config),
         deps.length && multiEntry(),
         bundleStats()
     ];
