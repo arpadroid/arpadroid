@@ -2,7 +2,6 @@ import { bundleStats } from 'rollup-plugin-bundle-stats';
 import { dts } from 'rollup-plugin-dts';
 import { hideBin } from 'yargs/helpers';
 import buildStyles from '../plugins/buildStyles.mjs';
-import chalk from 'chalk';
 import fs from 'fs';
 import multiEntry from '@rollup/plugin-multi-entry';
 import nodeResolve from '@rollup/plugin-node-resolve';
@@ -11,8 +10,9 @@ import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import Project from '../../projectBuilder/project.mjs';
 import rollupWatch from 'rollup-plugin-watch';
 import terser from '@rollup/plugin-terser';
-import watchDeps from '../plugins/watchDeps.mjs';
 import yargs from 'yargs';
+import { mergeObjects } from '@arpadroid/tools/src/objectTool.js';
+import { logError } from '../../utils/terminalLogger.mjs';
 
 const argv = yargs(hideBin(process.argv)).argv;
 const cwd = process.cwd();
@@ -60,17 +60,9 @@ export function shouldWatch() {
  * @returns {Record<string, unknown>}
  */
 export function getBuild(projectName, buildName, config = {}, projectConfig = {}) {
-    const defaultConfig = {
-        slim: isSlim(),
-        production: PROD,
-        watch: shouldWatch()
-    };
-    const buildConfig = { ...defaultConfig, ...config };
-    if (!buildConfig.slim && !buildConfig.deps?.length) {
-        buildConfig.deps = preProcessDependencies(DEPS);
-    }
+    const buildConfig = getBuildConfig(config);
     if (typeof rollupBuilds[buildName] !== 'function') {
-        chalk.red(`Invalid build name: ${buildName}`);
+        logError(`Invalid build name: ${buildName}`);
         return;
     }
     const project = new Project(projectName, projectConfig);
@@ -78,6 +70,29 @@ export function getBuild(projectName, buildName, config = {}, projectConfig = {}
     const typesBuild = getTypesBuild();
     const build = [appBuild, typesBuild].filter(Boolean);
     return { build, plugins: appBuild.plugins, appBuild, typesBuild, project, ...config };
+}
+
+
+/**
+ * Returns the build configuration.
+ * @param {Record<string, unknown>} config
+ * @returns {Record<string, unknown>}
+ */
+export function getBuildConfig(config = {}) {
+    const envConfig = JSON.parse(process.env['ARPADROID_BUILD_CONFIG'] ?? '{}');
+    const defaultConfig = mergeObjects(
+        {
+            slim: isSlim(),
+            production: PROD,
+            watch: shouldWatch()
+        },
+        envConfig
+    );
+    const rv = mergeObjects(defaultConfig, config);
+    if (!rv.slim && !rv.deps?.length) {
+        rv.deps = preProcessDependencies(DEPS);
+    }
+    return rv;
 }
 
 /**
@@ -119,8 +134,8 @@ export function getInput(config = {}) {
     }
     const rv = [entry];
     deps.forEach(dep => {
-        const depPath = path.join(cwd, 'node_modules', '@arpadroid', dep, 'dist', `arpadroid-${dep}.js`);
-        if (fs.existsSync(depPath)) {
+        const depPath = path.join('node_modules', '@arpadroid', dep, 'dist', `arpadroid-${dep}.js`);
+        if (fs.existsSync(path.join(cwd, depPath))) {
             rv.push(depPath);
         } else {
             cli.error(`Dependency ${dep} not found`);
@@ -159,15 +174,25 @@ export function getSlimPlugins() {
  * @returns {import('rollup').Plugin[]}
  */
 export function getFatPlugins(project, config) {
-    const { deps, watch = WATCH } = config;
-    return [
+    const { watch = WATCH, deps } = config;
+    const plugins = [
         nodeResolve({ browser: true, preferBuiltins: false }),
         watch && fs.existsSync(path.join(cwd, 'src', 'themes')) && rollupWatch({ dir: 'src/themes' }),
-        /** @todo - Polish the watch strategy as some dependencies do not trigger Hot Module Replacement or even automatic browser page reload when changed. */
-        // watch && watchDeps(project, config),
+        watch && getWatchers(deps),
         deps.length && multiEntry(),
         bundleStats()
     ];
+    return plugins.filter(Boolean);
+}
+
+export function getWatchers(deps) {
+    return deps.map(dep => {
+        const depPath = path.join(cwd, 'node_modules', '@arpadroid', dep, 'src', `themes`);
+        if (fs.existsSync(depPath)) {
+            return rollupWatch({ dir: depPath });
+        }
+        return null;
+    });
 }
 
 /**

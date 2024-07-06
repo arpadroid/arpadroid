@@ -1,14 +1,13 @@
 import { usagePanelDecorator } from './decorators';
+import { mergeObjects } from '@arpadroid/tools/src/objectTool.js';
 
 /** @type { import('@storybook/web-components').Preview } */
-const preview = {
+const defaultConfig = {
     decorators: [usagePanelDecorator()],
     parameters: {
         layout: 'padded', //'centered' | 'fullscreen' | 'padded'
         options: {
-            storySort: {
-                // order: ['Components', 'Fields']
-            }
+            storySort: {}
         },
         controls: {
             matchers: {
@@ -19,4 +18,6 @@ const preview = {
     }
 };
 
+const config = JSON.parse(process?.env?.PROJECT_CONFIG ?? '{}')?.storybook?.preview ?? {};
+const preview = mergeObjects(defaultConfig, config);
 export default preview;

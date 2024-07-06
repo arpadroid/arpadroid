@@ -1,15 +1,44 @@
-import { existsSync } from 'fs';
+import { basename } from 'path';
+import Project from '../projectBuilder/project.mjs';
 const html = String.raw;
 const cwd = process.cwd();
 const sbRoot = cwd + '/node_modules/@arpadroid/arpadroid/node_modules/@storybook';
-const projectConfigPath = cwd + '/arpadroid.config.js';
-let previewHead = '';
-let projectConfig = {};
-if (existsSync(projectConfigPath)) {
-    projectConfig = require(projectConfigPath).default;
-    if (typeof projectConfig.storybookPreviewHead === 'function') {
-        previewHead = projectConfig.storybookPreviewHead();
-    }
+const projectName = basename(cwd);
+const projectConfig = Project._getFileConfig();
+
+/**
+ * Renders the content for the HTML head.
+ * @param {string} _head
+ * @returns {string}
+ */
+function renderPreviewHead(_head) {
+    const fn = projectConfig?.storybook?.previewHead;
+    const head =
+        (typeof fn === 'function' && fn()) ||
+        html`
+            <link rel="stylesheet" href="/material-symbols/outlined.css" />
+            <link rel="stylesheet" href="/themes/default/default.bundled.final.css" />
+            <script type="module" src="/arpadroid-${projectName}.js"></script>
+        `;
+
+    return `${_head}${head}`;
+}
+
+/**
+ * Renders the content for the HTML body.
+ * @param {string} _body
+ * @returns {string}
+ */
+function renderPreviewBody(_body) {
+    const fn = projectConfig?.storybook?.previewBody;
+    const body =
+        (typeof fn === 'function' && fn()) ||
+        html`
+            ${_body}
+            <script src="http://127.0.0.1:35729/livereload.js?ext=Chrome&amp;extver=2.1.0"></script>
+        `;
+
+    return `${_body}${body}`;
 }
 
 const config = {
@@ -34,11 +63,8 @@ const config = {
         options: {}
     },
     docs: { autodocs: 'tag' },
-    previewBody: body => html`
-        ${body}
-        <script src="http://127.0.0.1:35729/livereload.js?ext=Chrome&amp;extver=2.1.0"></script>
-    `,
-    previewHead: head => html`${head}${previewHead}`,
+    previewBody: renderPreviewBody,
+    previewHead: renderPreviewHead,
     webpackFinal: async config => {
         config.watchOptions.aggregateTimeout = 700;
         config.watchOptions.ignored = ['**/*.css'];
@@ -52,7 +78,8 @@ const config = {
         return config;
     },
     env: config => ({
-        ...config
+        ...config,
+        PROJECT_CONFIG: JSON.stringify(projectConfig)
     })
 };
 
