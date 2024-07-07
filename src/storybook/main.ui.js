@@ -66,7 +66,7 @@ const config = {
     previewBody: renderPreviewBody,
     previewHead: renderPreviewHead,
     webpackFinal: async config => {
-        config.watchOptions.aggregateTimeout = 700;
+        config.watchOptions.aggregateTimeout = 1200;
         config.watchOptions.ignored = ['**/*.css'];
         config.module.rules = config.module.rules.filter(rule => {
             const isCSSRule = rule?.test?.toString().includes('css');

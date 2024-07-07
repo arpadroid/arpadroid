@@ -59,19 +59,18 @@ export function shouldWatch() {
  * @param {Record<string, unknown>} projectConfig
  * @returns {Record<string, unknown>}
  */
-export function getBuild(projectName, buildName, config = {}, projectConfig = {}) {
-    const buildConfig = getBuildConfig(config);
+export function getBuild(projectName, buildName, config = {}) {
     if (typeof rollupBuilds[buildName] !== 'function') {
         logError(`Invalid build name: ${buildName}`);
         return;
     }
-    const project = new Project(projectName, projectConfig);
+    const buildConfig = getBuildConfig(config);
+    const project = new Project(projectName, buildConfig);
     const appBuild = rollupBuilds[buildName](project, buildConfig);
     const typesBuild = getTypesBuild();
     const build = [appBuild, typesBuild].filter(Boolean);
-    return { build, plugins: appBuild.plugins, appBuild, typesBuild, project, ...config };
+    return { build, plugins: appBuild.plugins, appBuild, typesBuild, project, buildConfig };
 }
-
 
 /**
  * Returns the build configuration.
@@ -89,7 +88,7 @@ export function getBuildConfig(config = {}) {
         envConfig
     );
     const rv = mergeObjects(defaultConfig, config);
-    if (!rv.slim && !rv.deps?.length) {
+    if (!rv.slim && DEPS) {
         rv.deps = preProcessDependencies(DEPS);
     }
     return rv;
