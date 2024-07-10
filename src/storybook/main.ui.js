@@ -1,4 +1,4 @@
-import { basename } from 'path';
+import path, { basename } from 'path';
 import Project from '../projectBuilder/project.mjs';
 const html = String.raw;
 const cwd = process.cwd();
@@ -41,9 +41,11 @@ function renderPreviewBody(_body) {
     return `${_body}${body}`;
 }
 
+const toolsPath = path.resolve(__dirname, '../../node_modules/@arpadroid/tools/dist/');
+
 const config = {
     stories: [cwd + '/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
-    staticDirs: [cwd + '/dist', cwd + '/src'],
+    staticDirs: [cwd + '/dist', cwd + '/src', toolsPath],
     addons: [
         `${sbRoot}/addon-a11y`,
         `${sbRoot}/addon-actions`,
