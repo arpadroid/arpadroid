@@ -1,16 +1,19 @@
+import fs from 'fs';
+import path from 'path';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+
 import { bundleStats } from 'rollup-plugin-bundle-stats';
 import { dts } from 'rollup-plugin-dts';
-import { hideBin } from 'yargs/helpers';
-import buildStyles from '../plugins/buildStyles.mjs';
-import fs from 'fs';
 import multiEntry from '@rollup/plugin-multi-entry';
 import nodeResolve from '@rollup/plugin-node-resolve';
-import path from 'path';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
-import Project from '../../projectBuilder/project.mjs';
+import rollupAlias from '@rollup/plugin-alias';
 import rollupWatch from 'rollup-plugin-watch';
 import terser from '@rollup/plugin-terser';
-import yargs from 'yargs';
+
+import buildStyles from '../plugins/buildStyles.mjs';
+import Project from '../../projectBuilder/project.mjs';
 import { mergeObjects } from '@arpadroid/tools/src/objectTool.js';
 import { logError } from '../../utils/terminalLogger.mjs';
 
@@ -30,6 +33,7 @@ const rollupBuilds = {
         return {
             input: getInput(config),
             plugins: getPlugins(project, config),
+            external: getExternal(config),
             output: getOutput(project, config)
         };
     }
@@ -69,7 +73,15 @@ export function getBuild(projectName, buildName, config = {}) {
     const appBuild = rollupBuilds[buildName](project, buildConfig);
     const typesBuild = getTypesBuild();
     const build = [appBuild, typesBuild].filter(Boolean);
-    return { build, plugins: appBuild.plugins, appBuild, typesBuild, project, buildConfig };
+    return {
+        build,
+        appBuild,
+        typesBuild,
+        project,
+        buildConfig,
+        plugins: appBuild.plugins,
+        output: appBuild.output
+    };
 }
 
 /**
@@ -137,7 +149,7 @@ export function getInput(config = {}) {
         if (fs.existsSync(path.join(cwd, depPath))) {
             rv.push(depPath);
         } else {
-            cli.error(`Dependency ${dep} not found`);
+            logError(`Dependency ${dep} not found`, { depPath });
         }
     });
     return rv;
@@ -158,12 +170,28 @@ export function getPlugins(project, config) {
     ].filter(Boolean);
 }
 
+export function getAliases(projectName, projects = []) {
+    const aliases = [
+        projectName && { find: `@arpadroid/${projectName}`, replacement: `${cwd}/src/index.js` },
+        projects?.map(depName => {
+            return {
+                find: `@arpadroid/${depName}`,
+                replacement: `${cwd}/node_modules/@arpadroid/${depName}/src/index.js`
+            };
+        })
+    ];
+    return aliases?.length && rollupAlias({ entries: aliases });
+}
+
 /**
  * Returns the slim build rollup plugins configuration.
  * @returns {import('rollup').Plugin[]}
  */
-export function getSlimPlugins() {
-    return [peerDepsExternal()];
+export function getSlimPlugins(project, config = {}) {
+    const { parent, aliases = [] } = config;
+    const plugins = [peerDepsExternal()];
+    plugins.push(getAliases(parent, aliases));
+    return plugins.filter(Boolean);
 }
 
 /**
@@ -173,24 +201,28 @@ export function getSlimPlugins() {
  * @returns {import('rollup').Plugin[]}
  */
 export function getFatPlugins(project, config) {
-    const { watch = WATCH, deps } = config;
+    const { watch = WATCH, deps, aliases = [] } = config;
     const plugins = [
         nodeResolve({ browser: true, preferBuiltins: false }),
         watch && fs.existsSync(path.join(cwd, 'src', 'themes')) && rollupWatch({ dir: 'src/themes' }),
-        watch && getWatchers(deps),
-        deps.length && multiEntry(),
-        bundleStats()
+        watch && getWatchers(deps, project),
+        deps?.length && multiEntry(),
+        bundleStats(),
+        getAliases(project.name, aliases)
     ];
     return plugins.filter(Boolean);
 }
 
-export function getWatchers(deps) {
+/**
+ * Returns the watchers for the project dependencies.
+ * @param {string[]} envDeps
+ * @param {Project} project
+ */
+export function getWatchers(envDeps = [], project) {
+    const deps = [...new Set(envDeps.concat(project.getArpadroidDependencies()))];
     return deps.map(dep => {
         const depPath = path.join(cwd, 'node_modules', '@arpadroid', dep, 'src', `themes`);
-        if (fs.existsSync(depPath)) {
-            return rollupWatch({ dir: depPath });
-        }
-        return null;
+        return fs.existsSync(depPath) ? rollupWatch({ dir: depPath }) : null;
     });
 }
 
@@ -205,6 +237,14 @@ export function getOutput(project) {
         file: `dist/arpadroid-${project.name}.js`,
         format: 'es'
     };
+}
+
+/**
+ * Returns the external dependencies.
+ */
+export function getExternal(config = {}) {
+    const { external = [] } = config;
+    return typeof external.map === 'function' && external?.map(dep => `@arpadroid/${dep}`);
 }
 
 export default rollupBuilds;

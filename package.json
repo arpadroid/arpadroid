@@ -78,6 +78,7 @@
         "@arpadroid/navigation": "file:../navigation",
         "@arpadroid/stylesheet-bundler": "file:../stylesheet-bundler",
         "@arpadroid/tools": "file:../tools",
-        "@arpadroid/ui": "file:../ui"
+        "@arpadroid/ui": "file:../ui",
+        "@arpadroid/resources": "file:../resources"
     }
 }
