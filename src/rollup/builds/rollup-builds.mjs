@@ -4,6 +4,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 
 import { bundleStats } from 'rollup-plugin-bundle-stats';
+import gzipPlugin from 'rollup-plugin-gzip'
 import { dts } from 'rollup-plugin-dts';
 import multiEntry from '@rollup/plugin-multi-entry';
 import nodeResolve from '@rollup/plugin-node-resolve';
@@ -34,7 +35,8 @@ const rollupBuilds = {
             input: getInput(config),
             plugins: getPlugins(project, config),
             external: getExternal(config),
-            output: getOutput(project, config)
+            output: getOutput(project, config),
+            treeshake: true
         };
     }
 };
@@ -80,7 +82,17 @@ export function getBuild(projectName, buildName, config = {}) {
         project,
         buildConfig,
         plugins: appBuild.plugins,
-        output: appBuild.output
+        output: appBuild.output,
+        Plugins: {
+            bundleStats,
+            dts,
+            multiEntry,
+            nodeResolve,
+            peerDepsExternal,
+            alias: rollupAlias,
+            watch: rollupWatch,
+            terser
+        }
     };
 }
 
@@ -166,19 +178,25 @@ export function getPlugins(project, config) {
     return [
         terser({ keep_classnames: true }),
         ...(slim ? getSlimPlugins(project, config) : getFatPlugins(project, config)),
-        buildStyles(project, config)
+        buildStyles(project, config),
+        gzipPlugin()
     ].filter(Boolean);
 }
 
 export function getAliases(projectName, projects = []) {
+    if (!Array.isArray(projects)) {
+        logError('Invalid projects configuration, expecting an array instead got: ', projects);
+    }
     const aliases = [
         projectName && { find: `@arpadroid/${projectName}`, replacement: `${cwd}/src/index.js` },
-        projects?.map(depName => {
-            return {
-                find: `@arpadroid/${depName}`,
-                replacement: `${cwd}/node_modules/@arpadroid/${depName}/src/index.js`
-            };
-        })
+        projects?.map(dep =>
+            typeof dep === 'string'
+                ? {
+                      find: `@arpadroid/${dep}`,
+                      replacement: `${cwd}/node_modules/@arpadroid/${dep}/src/index.js`
+                  }
+                : dep
+        )
     ];
     return aliases?.length && rollupAlias({ entries: aliases });
 }

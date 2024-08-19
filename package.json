@@ -64,6 +64,7 @@
         "rollup-plugin-bundle-stats": "^4.13.2",
         "rollup-plugin-copy": "^3.5.0",
         "rollup-plugin-dts": "^6.1.1",
+        "rollup-plugin-gzip": "^4.0.0",
         "rollup-plugin-peer-deps-external": "^2.2.4",
         "rollup-plugin-watch": "^1.0.4",
         "storybook": "^8.1.1",
@@ -76,9 +77,9 @@
         "@arpadroid/lists": "file:../lists",
         "@arpadroid/messages": "file:../messages",
         "@arpadroid/navigation": "file:../navigation",
+        "@arpadroid/resources": "file:../resources",
         "@arpadroid/stylesheet-bundler": "file:../stylesheet-bundler",
         "@arpadroid/tools": "file:../tools",
-        "@arpadroid/ui": "file:../ui",
-        "@arpadroid/resources": "file:../resources"
+        "@arpadroid/ui": "file:../ui"
     }
 }

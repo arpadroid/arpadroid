@@ -19,7 +19,7 @@ const MINIFY = Boolean(argv.minify ?? process.env.minify);
 const WATCH = Boolean(argv.watch ?? process.env.watch);
 const STORYBOOK_PORT = argv['storybook'] ?? process.env['storybook'];
 const STYLE_PATTERNS = argv['style-patterns'];
-const DEPENDENCY_SORT = ['tools', 'i18n', 'application', 'ui', 'lists', 'navigation', 'messages', 'form'];
+const DEPENDENCY_SORT = ['tools', 'i18n', 'application', 'ui', 'lists', 'navigation', 'messages', 'forms'];
 const STYLE_SORT = ['ui', 'lists', 'navigation', 'messages', 'form'];
 const VERBOSE = Boolean(argv.verbose ?? process.env.verbose);
 class Project {
