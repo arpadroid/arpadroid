@@ -1,3 +1,5 @@
+/* eslint-disable sonarjs/no-duplicate-string */
+/* eslint-disable security/detect-non-literal-fs-filename */
 import { rollup, watch as rollupWatch } from 'rollup';
 import { mergeObjects } from '@arpadroid/tools/src/objectTool.js';
 import { readFileSync, existsSync, writeFileSync, cpSync, rmSync, readdirSync, mkdirSync } from 'fs';
@@ -7,21 +9,22 @@ import path from 'path';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
 import StylesheetBundler from '@arpadroid/stylesheet-bundler';
-import { execSync, spawn } from 'child_process';
+import { spawn } from 'child_process';
 import chalk from 'chalk';
-import { logError, pkgLog, depLog, logTask } from '../utils/terminalLogger.mjs';
-import { headingLog, subjectLog, successLog } from '../utils/terminalLogger.mjs';
+import { log, logStyle } from '../utils/terminalLogger.mjs';
+import ProjectTest from './projectTest.mjs';
 
 const cwd = process.cwd();
 const argv = yargs(hideBin(process.argv)).argv;
 const SLIM = Boolean(argv.slim ?? process.env.slim);
 const MINIFY = Boolean(argv.minify ?? process.env.minify);
 const WATCH = Boolean(argv.watch ?? process.env.watch);
-const STORYBOOK_PORT = argv['storybook'] ?? process.env['storybook'];
+const STORYBOOK_PORT = argv.storybook ?? process.env.storybook;
 const STYLE_PATTERNS = argv['style-patterns'];
 const DEPENDENCY_SORT = ['tools', 'i18n', 'application', 'ui', 'lists', 'navigation', 'messages', 'forms'];
 const STYLE_SORT = ['ui', 'lists', 'navigation', 'messages', 'form'];
 const VERBOSE = Boolean(argv.verbose ?? process.env.verbose);
+
 class Project {
     // #region INITIALIZATION
     constructor(name, config = {}) {
@@ -52,7 +55,8 @@ class Project {
 
     getDefaultConfig() {
         return {
-            basePath: cwd
+            basePath: cwd,
+            logArpadroid: true,
         };
     }
 
@@ -63,7 +67,7 @@ class Project {
 
     validate() {
         if (!existsSync(this.path)) {
-            logError(`Project ${this.name} does not exist`);
+            log.error(`Project ${this.name} does not exist`);
             return false;
         }
         return true;
@@ -84,6 +88,10 @@ class Project {
 
     // #region ACCESSORS
 
+    getScripts() {
+        return this.pkg?.scripts;
+    }
+
     hasStyles() {
         return this.getThemes().length > 0;
     }
@@ -95,6 +103,13 @@ class Project {
     getThemes() {
         const path = this.getThemesPath();
         return fs.existsSync(path) ? readdirSync(path) : [];
+    }
+
+    getArpadroidPath() {
+        if (this.name === 'arpadroid') {
+            return this.project.path;
+        }
+        return `${this.path}/node_modules/@arpadroid/arpadroid`;
     }
 
     getArpadroidDependencies(sort = DEPENDENCY_SORT) {
@@ -116,20 +131,15 @@ class Project {
 
     async getBuildConfig(_config = {}) {
         this.fileConfig = (await this.getFileConfig()) || {};
-        return mergeObjects(this.fileConfig, _config);
+        return mergeObjects({
+            logHeading: true,
+            ...this.fileConfig,
+        }, _config);
     }
 
-    // #endregion
-
-    // #region BUILD LOGGING
-
-    logBuild(config) {
-        const pkgName = '@arpadroid/' + this.name;
-        if (!config?.slim) {
-            console.log(headingLog(`Building project ${pkgLog(pkgName)}:`));
-        } else {
-            logTask(config?.parent ?? this.name, `building dep ${depLog(pkgName)}`);
-        }
+    test() {
+        this.projectTest = new ProjectTest(this);
+        return this.projectTest.test();
     }
 
     // #endregion
@@ -147,12 +157,22 @@ class Project {
         await this.rollup(rollupConfig, config);
         this.runStorybook(config);
         this.watch(rollupConfig, config);
-        !slim && logTask(this.name, successLog('build complete, have a nice day :)'));
+        !slim && log.task(this.name, logStyle.success('Build complete, have a nice day ;)'));
         return true;
     }
 
+    logBuild(config) {
+        const pkgName = '@arpadroid/' + this.name;
+        if (!config?.slim) {
+            config.logHeading && log.arpadroid();
+            console.log(logStyle.heading(`Building project: ${logStyle.pkg(pkgName)} ...`));
+        } else {
+            log.task(config?.parent ?? this.name, `Building ${logStyle.dep(pkgName)}.`);
+        }
+    }
+
     async cleanBuild({ slim }) {
-        !slim && logTask(this.name, 'cleaning up');
+        !slim && log.task(this.name, 'Cleaning up.');
         if (existsSync(`${this.path}/dist`)) {
             rmSync(`${this.path}/dist`, { recursive: true, force: true });
         }
@@ -179,8 +199,9 @@ class Project {
         return existsSync(projectPath) ? projectPath : arpadroidPath;
     }
 
+
     async buildDependencies() {
-        logTask(this.name, 'building dependencies');
+        log.task(this.name, 'Building dependencies.');
         const projects = this.createDependencyInstances();
         process.env.arpadroid_slim = true;
         const rv = await Promise.all(
@@ -193,7 +214,7 @@ class Project {
                 return await project.build(config);
             })
         ).catch(err => {
-            logError(`Failed to build ${subjectLog(this.name)} dependencies`, err);
+            log.error(`Failed to build ${logStyle.subject(this.name)} dependencies`, err);
             return Promise.reject(err);
         });
 
@@ -202,7 +223,7 @@ class Project {
     }
 
     async bundleStyles(config = {}) {
-        !config.slim && logTask(this.name, 'bundling CSS');
+        !config.slim && log.task(this.name, 'Bundling CSS.');
         const { path = this.path } = config;
         const slim = config.slim ?? SLIM;
         const minify = config.minify ?? MINIFY;
@@ -230,7 +251,7 @@ class Project {
 
     async rollup(rollupConfig, config) {
         const { aliases } = config;
-        VERBOSE || (!config.slim && logTask(this.name, 'rolling up'));
+        VERBOSE || (!config.slim && log.task(this.name, 'Rolling up.'));
         const appBuild = rollupConfig[0];
         const plugins = appBuild.plugins;
         if (aliases?.length) {
@@ -268,26 +289,25 @@ class Project {
         if (!watch) {
             return;
         }
-        VERBOSE || (!slim && logTask(this.name, 'watching for file changes'));
+        VERBOSE || (!slim && log.task(this.name, 'watching for file changes'));
         this.watcher = rollupWatch(rollupConfig);
         this.watcher.on('event', event => {
             if (event.code === 'ERROR') {
-                logError(`Error occurred while watching ${this.name}`, event.error);
+                log.error(`Error occurred while watching ${this.name}`, event.error);
             } else if (event.code === 'END') {
                 // console.log(chalk.green(`Stopped watching ${chalk.magenta(this.name)}`));
             } else {
-                VERBOSE && logTask(this.name, 'Got watch event', event);
+                VERBOSE && log.task(this.name, 'Got watch event', event);
             }
         });
         this.watcher.on('event', ({ result }) => result?.close());
-
         !slim && this.runGuardLivereload();
     }
 
     runGuardLivereload() {
         if (existsSync(`${this.path}/Guardfile`)) {
-            logTask(this.name, 'running guard livereload');
-            spawn(`guard`, { shell: true, stdio: 'inherit', cwd: this.path });
+            log.task(this.name, 'running guard livereload');
+            spawn('guard', { shell: true, stdio: 'inherit', cwd: this.path });
         }
     }
     // #endregion
@@ -296,8 +316,10 @@ class Project {
 
     buildStyles(config = {}) {
         const slim = config.slim ?? SLIM;
-        if (slim) return;
-        logTask(this.name, 'compiling dependency styles');
+        if (slim) {
+            return;
+        }
+        log.task(this.name, 'Compiling dependency styles.');
         const minifiedDeps = this.getStyleBuildFiles() ?? [];
         Object.entries(minifiedDeps).forEach(([theme, files]) => this.buildTheme(theme, files));
         if (this.getArpadroidDependencies().includes('ui')) {
@@ -340,7 +362,7 @@ class Project {
                     bundledCss += readFileSync(bundledFile, 'utf8');
                 }
             } else {
-                logError(`Could not bundle file, ${chalk.magentaBright(file)} does not exist`);
+                log.error(`Could not bundle file, ${chalk.magentaBright(file)} does not exist`);
             }
         });
         if (css) {
@@ -360,24 +382,6 @@ class Project {
             recursive: true
         });
     }
-
-    // #endregion
-
-    // #region TEST
-    async test() {
-        console.log(headingLog(`Testing ${subjectLog(`@arpadroid ${this.name}`)}`));
-        await this.testStorybook();
-        return true;
-    }
-
-    async testStorybook() {
-        const configPath = this.getStorybookConfigPath();
-        logTask(this.name, 'running storybook tests');
-        const script = `${this.path}/node_modules/@arpadroid/arpadroid/node_modules/@storybook/test-runner/dist/test-storybook`;
-        execSync(`node ${script} -c ${configPath}`, { shell: true, stdio: 'inherit', cwd: this.path });
-    }
-
-    async testJest() {}
 
     // #endregion
 }
