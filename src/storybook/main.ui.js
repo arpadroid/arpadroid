@@ -75,8 +75,8 @@ const config = {
             return isCSSRule ? false : true;
         });
         config.resolve.alias = config.resolve.alias || {};
-        config.resolve.alias['@storybook'] = sbRoot;
         config.resolve.alias['@storybook/test'] = sbRoot + '/test';
+        config.resolve.alias['@storybook/addon-actions'] = sbRoot + '/addon-actions';
         return config;
     },
     env: config => ({

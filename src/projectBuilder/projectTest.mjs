@@ -32,7 +32,7 @@ class ProjectTest {
         this.setConfig(config);
         this.scripts = this.project.getScripts();
         this.pm2 = this.project.getArpadroidPath() + '/node_modules/pm2/bin/pm2';
-        this.sb = this.project.getArpadroidPath() + '/node_modules/@storybook/cli/bin/index.js';
+        this.sb = this.project.getArpadroidPath() + '/node_modules/@storybook/cli/index.js';
         this.httpServer = this.project.getArpadroidPath() + '/node_modules/http-server/bin/http-server';
     }
 

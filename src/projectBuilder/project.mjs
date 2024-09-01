@@ -56,7 +56,7 @@ class Project {
     getDefaultConfig() {
         return {
             basePath: cwd,
-            logArpadroid: true,
+            logArpadroid: true
         };
     }
 
@@ -131,15 +131,33 @@ class Project {
 
     async getBuildConfig(_config = {}) {
         this.fileConfig = (await this.getFileConfig()) || {};
-        return mergeObjects({
-            logHeading: true,
-            ...this.fileConfig,
-        }, _config);
+        return mergeObjects(
+            {
+                logHeading: true,
+                ...this.fileConfig
+            },
+            _config
+        );
     }
 
     test() {
         this.projectTest = new ProjectTest(this);
         return this.projectTest.test();
+    }
+
+    // #endregion
+
+    // #region INSTALL
+    async install() {
+        log.task(this.name, 'Installing project.');
+        const cmd = `cd ${this.path} && npm install`;
+        // wait until command has completed before returning.
+        return new Promise((resolve, reject) => {
+            const child = spawn(cmd, { shell: true, stdio: 'inherit' });
+            child.on('close', code => {
+                code === 0 ? resolve(true) : reject(new Error(`Failed to install ${this.name}`));
+            });
+        });
     }
 
     // #endregion
@@ -190,7 +208,7 @@ class Project {
 
     async getStorybookCmd() {
         const configPath = this.getStorybookConfigPath();
-        return `node ./node_modules/@arpadroid/arpadroid/node_modules/storybook dev -p ${STORYBOOK_PORT} -c "${configPath}"`;
+        return `node ./node_modules/@arpadroid/arpadroid/node_modules/storybook/bin/index.cjs dev -p ${STORYBOOK_PORT} -c "${configPath}"`;
     }
 
     getStorybookConfigPath() {
@@ -198,7 +216,6 @@ class Project {
         const arpadroidPath = `${this.path}/node_modules/@arpadroid/arpadroid/.storybook`;
         return existsSync(projectPath) ? projectPath : arpadroidPath;
     }
-
 
     async buildDependencies() {
         log.task(this.name, 'Building dependencies.');
