@@ -18,6 +18,12 @@ function renderPreviewHead(_head) {
         html`
             <link rel="stylesheet" href="/material-symbols/outlined.css" />
             <link rel="stylesheet" href="/themes/default/default.bundled.final.css" />
+            <link
+                id="mobile-styles"
+                rel="stylesheet"
+                href="/themes/mobile/mobile.bundled.final.css"
+                disabled
+            />
             <script type="module" src="/arpadroid-${projectName}.js"></script>
         `;
 
