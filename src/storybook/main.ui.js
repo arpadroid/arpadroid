@@ -51,7 +51,7 @@ const toolsPath = path.resolve(__dirname, '../../node_modules/@arpadroid/tools/d
 
 const config = {
     stories: [cwd + '/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
-    staticDirs: [cwd + '/dist', cwd + '/src', toolsPath],
+    staticDirs: [cwd + '/dist', cwd + '/src', toolsPath, cwd + '/assets'],
     addons: [
         `${sbRoot}/addon-a11y`,
         `${sbRoot}/addon-actions`,
