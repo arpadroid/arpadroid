@@ -17,6 +17,7 @@ function renderPreviewHead(_head) {
     const head =
         (typeof fn === 'function' && fn()) ||
         html`
+            <link rel="preload" href="/i18n/en.json" as="fetch" type="application/json" />
             <link rel="stylesheet" href="/material-symbols/outlined.css" />
             <link rel="stylesheet" href="/themes/default/default.bundled.final.css" />
             <link
@@ -50,7 +51,7 @@ function renderPreviewBody(_body) {
 
 const toolsPath = path.resolve(__dirname, '../../node_modules/@arpadroid/tools/dist/');
 
-const staticDirs = [cwd + '/dist', cwd + '/src', toolsPath ];
+const staticDirs = [cwd + '/dist', cwd + '/src', toolsPath];
 if (fs.existsSync(cwd + '/assets')) {
     staticDirs.push(cwd + '/assets');
 }

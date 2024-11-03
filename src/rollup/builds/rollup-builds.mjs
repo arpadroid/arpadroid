@@ -13,8 +13,10 @@ import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import rollupAlias from '@rollup/plugin-alias';
 import rollupWatch from 'rollup-plugin-watch';
 import terser from '@rollup/plugin-terser';
+import copy from 'rollup-plugin-copy';
 
 import buildStyles from '../plugins/buildStyles.mjs';
+import json from '@rollup/plugin-json';
 import Project from '../../projectBuilder/project.mjs';
 import { mergeObjects } from '@arpadroid/tools/src/objectTool.js';
 import { logError } from '../../utils/terminalLogger.mjs';
@@ -180,7 +182,10 @@ export function getFatPlugins(project, config) {
         watch && getWatchers(deps, project),
         deps?.length && multiEntry(),
         bundleStats(),
-        getAliases(project.name, aliases)
+        getAliases(project.name, aliases),
+        copy({
+            targets: [{ src: 'src/i18n', dest: 'dist' }]
+        })
     ];
     return plugins.filter(Boolean);
 }
@@ -192,12 +197,14 @@ export function getFatPlugins(project, config) {
  * @returns {import('rollup').Plugin[]}
  */
 export function getPlugins(project, config) {
-    const { slim } = config;
+    const { slim, plugins = [] } = config;
     return [
+        json(),
         terser({ keep_classnames: true }),
         ...(slim ? getSlimPlugins(project, config) : getFatPlugins(project, config)),
         buildStyles(project, config),
-        gzipPlugin()
+        gzipPlugin(),
+        ...plugins
     ].filter(Boolean);
 }
 
@@ -220,7 +227,7 @@ export function getOutput(project) {
  */
 export function getExternal(config = {}) {
     const { external = [] } = config;
-    return typeof external.map === 'function' && external?.map(dep => `@arpadroid/${dep}`);
+    return typeof external?.map === 'function' && external?.map(dep => `@arpadroid/${dep}`) || [];
 }
 
 /**

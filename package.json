@@ -62,6 +62,7 @@
         "chromatic": "^11.3.0",
         "copy-webpack-plugin": "^12.0.2",
         "dts-bundle-generator": "^9.3.1",
+        "glob": "^11.0.0",
         "html-webpack-plugin": "^5.6.0",
         "http-proxy-middleware": "^3.0.0",
         "http-server": "^14.1.1",
@@ -80,7 +81,6 @@
         "rollup-plugin-peer-deps-external": "^2.2.4",
         "rollup-plugin-watch": "^1.0.4",
         "storybook": "^8.2.9",
-        "glob": "^11.0.0",
         "yargs": "^17.7.2"
     },
     "peerDependencies": {

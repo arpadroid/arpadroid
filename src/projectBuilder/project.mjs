@@ -30,6 +30,7 @@ class Project {
     constructor(name, config = {}) {
         this.setConfig(config);
         this.name = name;
+        this.i18nFiles = [];
         this.path = this.getPath();
         this.pkg = this.getPackageJson();
         this.scripts = this.pkg?.scripts ?? {};
@@ -170,12 +171,25 @@ class Project {
         await this.cleanBuild(config);
         !slim && (await this.buildDependencies(config));
         await this.bundleStyles(config);
+        await this.bundleI18n(config);
         process.env.ARPADROID_BUILD_CONFIG = JSON.stringify(config);
         const rollupConfig = (await import(`${this.path}/rollup.config.mjs`)).default;
         await this.rollup(rollupConfig, config);
         this.runStorybook(config);
         this.watch(rollupConfig, config);
         !slim && log.task(this.name, logStyle.success('Build complete, have a nice day ;)'));
+        return true;
+    }
+
+    async bundleI18n(config) {
+        const slim = config.slim ?? SLIM;
+        if (slim) return true;
+        const script = `${cwd}/node_modules/@arpadroid/i18n/scripts/compile.mjs`;
+        const scriptExists = existsSync(script);
+        if (scriptExists) {
+            const compiler = await import(script);
+            this.i18nFiles = await compiler.compileI18n(this);
+        }
         return true;
     }
 

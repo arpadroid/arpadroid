@@ -1,6 +1,11 @@
-import Project from '../../projectBuilder/project.mjs';
+/**
+ * @typedef {import('../../Project').default} Project
+ */
+
 /**
  * Creates a stylesheet out of any CSS files in the project.
+ * @param {Project} project
+ * @param {Record<string, unknown>} config
  * @returns {import('rollup').Plugin}
  */
 export default function buildStyles(project, config) {

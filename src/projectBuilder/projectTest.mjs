@@ -83,6 +83,7 @@ class ProjectTest {
                 cwd: this.project.path
             });
         }
+        await this.testNodeJS(config);
 
         if (config.jest && this.jestTests?.length) {
             await this.testJest(config);
@@ -93,8 +94,19 @@ class ProjectTest {
         return this.testResponse;
     }
 
+    async testNodeJS() {
+        const file = `${this.project.path}/test/test.mjs`;
+        if (!fs.existsSync(file)) {
+            return true;
+        }
+        const script = `node ${file}`;
+        log.task(this.project.name, 'Running node tests');
+        return execSync(script, { shell: true, stdio: 'inherit', cwd: this.project.path });
+    }
+
     async testJest() {
-        const script = `jest --rootDir="${this.project.path}" --config="${this.getJestConfigLocation()}"`;
+        
+        const script = `node --experimental-vm-modules node_modules/jest/bin/jest.js --rootDir="${this.project.path}" --config="${this.getJestConfigLocation()}"`;
         log.task(this.project.name, 'running jest tests');
         return execSync(script, { shell: true, stdio: 'inherit', cwd: this.project.path });
     }
