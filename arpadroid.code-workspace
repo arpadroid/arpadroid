@@ -32,6 +32,9 @@
 		},
 		{
 			"path": "../resources"
+		},
+		{
+			"path": "../gallery"
 		}
 	],
 	"settings": {}
