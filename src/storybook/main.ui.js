@@ -20,6 +20,7 @@ function renderPreviewHead(_head) {
             <link rel="preload" href="/i18n/en.json" as="fetch" type="application/json" />
             <link rel="stylesheet" href="/material-symbols/outlined.css" />
             <link rel="stylesheet" href="/themes/default/default.bundled.final.css" />
+            <link id="dark-styles" rel="stylesheet" href="/themes/dark/dark.bundled.final.css" disabled />
             <link
                 id="mobile-styles"
                 rel="stylesheet"

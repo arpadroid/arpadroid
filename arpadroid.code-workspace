@@ -37,5 +37,9 @@
 			"path": "../gallery"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"cSpell.words": [
+			"hilight"
+		]
+	}
 }

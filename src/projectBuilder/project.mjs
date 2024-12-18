@@ -397,6 +397,9 @@ class Project {
             }
         });
         if (css) {
+            if (!fs.existsSync(themePath)) {
+                fs.mkdirSync(themePath, { recursive: true });
+            }
             writeFileSync(`${themePath}/${theme}.final.css`, css);
         }
         if (bundledCss) {
