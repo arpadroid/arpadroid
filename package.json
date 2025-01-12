@@ -84,12 +84,15 @@
     },
     "peerDependencies": {
         "@arpadroid/application": "file:../application",
+        "@arpadroid/context": "file:../context",
         "@arpadroid/forms": "file:../forms",
+        "@arpadroid/gallery": "file:../gallery",
         "@arpadroid/i18n": "file:../i18n",
         "@arpadroid/lists": "file:../lists",
         "@arpadroid/messages": "file:../messages",
         "@arpadroid/navigation": "file:../navigation",
         "@arpadroid/resources": "file:../resources",
+        "@arpadroid/services": "file:../services",
         "@arpadroid/stylesheet-bundler": "file:../stylesheet-bundler",
         "@arpadroid/tools": "file:../tools",
         "@arpadroid/ui": "file:../ui"

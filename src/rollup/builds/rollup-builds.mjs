@@ -25,7 +25,7 @@ const argv = yargs(hideBin(process.argv)).argv;
 const cwd = process.cwd();
 const DEPS = process.env.deps ?? argv.deps;
 const PROD = Boolean(process.env.production);
-const SLIM = argv?.slim === 'true';
+const SLIM = argv?.slim;
 const WATCH = Boolean(!PROD && argv.watch);
 
 /**
@@ -137,7 +137,7 @@ export function getAliases(projectName, projects = []) {
             }
             return dep;
         })
-    ];
+    ].filter(item => typeof item !== 'undefined');
     return aliases?.length && rollupAlias({ entries: aliases });
 }
 
@@ -227,7 +227,7 @@ export function getOutput(project) {
  */
 export function getExternal(config = {}) {
     const { external = [] } = config;
-    return typeof external?.map === 'function' && external?.map(dep => `@arpadroid/${dep}`) || [];
+    return (typeof external?.map === 'function' && external?.map(dep => `@arpadroid/${dep}`)) || [];
 }
 
 /**

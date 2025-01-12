@@ -35,6 +35,12 @@
 		},
 		{
 			"path": "../gallery"
+		},
+		{
+			"path": "../context"
+		},
+		{
+			"path": "../services"
 		}
 	],
 	"settings": {

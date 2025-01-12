@@ -17,7 +17,6 @@ const defaultConfig = {
         }
     }
 };
-
 const config = JSON.parse(process?.env?.PROJECT_CONFIG ?? '{}')?.storybook?.preview ?? {};
 const preview = mergeObjects(defaultConfig, config);
 export default preview;

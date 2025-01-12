@@ -1,12 +1,12 @@
 import path, { basename } from 'path';
 import fs from 'fs';
 import Project from '../projectBuilder/project.mjs';
+
 const html = String.raw;
 const cwd = process.cwd();
 const sbRoot = cwd + '/node_modules/@arpadroid/arpadroid/node_modules/@storybook';
 const projectName = basename(cwd);
 const projectConfig = Project._getFileConfig();
-
 /**
  * Renders the content for the HTML head.
  * @param {string} _head
@@ -51,11 +51,11 @@ function renderPreviewBody(_body) {
 }
 
 const toolsPath = path.resolve(__dirname, '../../node_modules/@arpadroid/tools/dist/');
+const staticDirs = [cwd + '/dist', cwd + '/src'];
+fs.existsSync(cwd + '/assets') && staticDirs.push(cwd + '/assets');
+fs.existsSync(cwd + '/storybook/decorators') && staticDirs.push(cwd + '/storybook/decorators');
+fs.existsSync(toolsPath) && staticDirs.push(toolsPath);
 
-const staticDirs = [cwd + '/dist', cwd + '/src', toolsPath];
-if (fs.existsSync(cwd + '/assets')) {
-    staticDirs.push(cwd + '/assets');
-}
 const config = {
     stories: [cwd + '/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
     staticDirs,
