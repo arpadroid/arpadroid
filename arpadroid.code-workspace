@@ -1,46 +1,60 @@
 {
 	"folders": [
 		{
+			"name": "arpadroid",
 			"path": "."
 		},
 		{
-			"path": "../lists"
-		},
-		{
-			"path": "../messages"
-		},
-		{
-			"path": "../navigation"
-		},
-		{
+			"name": "application",
 			"path": "../application"
 		},
 		{
-			"path": "../forms"
-		},
-		{
-			"path": "../i18n"
-		},
-		{
-			"path": "../stylesheet-bundler"
-		},
-		{
-			"path": "../tools"
-		},
-		{
-			"path": "../ui"
-		},
-		{
-			"path": "../resources"
-		},
-		{
-			"path": "../gallery"
-		},
-		{
+			"name": "context",
 			"path": "../context"
 		},
 		{
+			"name": "gallery",
+			"path": "../gallery"
+		},
+		{
+			"name": "i18n",
+			"path": "../i18n"
+		},
+		{
+			"name": "forms",
+			"path": "../forms"
+		},
+		{
+			"name": "lists",
+			"path": "../lists"
+		},
+		{
+			"name": "messages",
+			"path": "../messages"
+		},
+		{
+			"name": "navigation",
+			"path": "../navigation"
+		},
+		{
+			"name": "resources",
+			"path": "../resources"
+		},
+		{
+			"name": "services",
 			"path": "../services"
+		},
+		{
+			"name": "stylesheet-bundler",
+			"path": "../stylesheet-bundler"
+		},
+		{
+			"name": "tools",
+			"path": "../tools"
+		},
+		{
+			"name": "ui",
+			"path": "../ui"
 		}
 	],
 	"settings": {

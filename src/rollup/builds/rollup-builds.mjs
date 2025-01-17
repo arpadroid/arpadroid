@@ -14,6 +14,7 @@ import rollupAlias from '@rollup/plugin-alias';
 import rollupWatch from 'rollup-plugin-watch';
 import terser from '@rollup/plugin-terser';
 import copy from 'rollup-plugin-copy';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 import buildStyles from '../plugins/buildStyles.mjs';
 import json from '@rollup/plugin-json';
@@ -45,7 +46,7 @@ export function shouldWatch() {
 }
 
 /**
- * Pre-processes the dependencies.
+ * Preprocesses the dependencies.
  * @param {string | string[]} deps
  * @returns {string[]}
  */
@@ -120,6 +121,7 @@ export function getInput(config = {}) {
  * Returns the aliases for the project dependencies.
  * @param {string} projectName
  * @param {string[]} projects
+ * @param {Project} project
  * @returns {import('rollup').Plugin}
  */
 export function getAliases(projectName, projects = []) {
@@ -176,8 +178,29 @@ export function getSlimPlugins(project, config = {}) {
  */
 export function getFatPlugins(project, config) {
     const { watch = WATCH, deps, aliases = [] } = config;
+
     const plugins = [
         nodeResolve({ browser: true, preferBuiltins: false }),
+        terser({
+            keep_classnames: false,
+            compress: {
+                // drop_console: true,
+                // drop_debugger: true,
+                // ecma: 2020,
+                // module: true,
+                // passes: 3,
+                // unsafe: true
+            },
+            mangle: {
+                // properties: {
+                //     regex: /^_/ // Only mangle properties that start with `_`
+                // }
+                // toplevel: true
+            },
+            format: {
+                // comments: false
+            }
+        }),
         watch && fs.existsSync(path.join(cwd, 'src', 'themes')) && rollupWatch({ dir: 'src/themes' }),
         watch && getWatchers(deps, project),
         deps?.length && multiEntry(),
@@ -185,6 +208,10 @@ export function getFatPlugins(project, config) {
         getAliases(project.name, aliases),
         copy({
             targets: [{ src: 'src/i18n', dest: 'dist' }]
+        }),
+        visualizer({
+            emitFile: true,
+            filename: 'stats.html'
         })
     ];
     return plugins.filter(Boolean);
@@ -200,7 +227,6 @@ export function getPlugins(project, config) {
     const { slim, plugins = [] } = config;
     return [
         json(),
-        terser({ keep_classnames: true }),
         ...(slim ? getSlimPlugins(project, config) : getFatPlugins(project, config)),
         buildStyles(project, config),
         gzipPlugin(),
@@ -216,7 +242,8 @@ export function getPlugins(project, config) {
 export function getOutput(project) {
     return {
         file: `dist/arpadroid-${project.name}.js`,
-        format: 'es'
+        format: 'esm'
+        // preserveModules: true,
     };
 }
 
@@ -231,17 +258,55 @@ export function getExternal(config = {}) {
 }
 
 /**
+ * Returns the default build configuration.
+ * @param {Project} project
+ * @param {Record<string, unknown>} config
+ * @returns {import('rollup').InputOptions}
+ */
+export function getBuildDefaults(project, config) {
+    return {
+        input: getInput(config),
+        plugins: getPlugins(project, config),
+        external: getExternal(config),
+        output: getOutput(project),
+        treeshake: true
+    };
+}
+
+/**
+ * Returns the polyfills build configuration.
+ * @param {Project} project
+ * @returns {import('rollup').InputOptions}
+ */
+export function getPolyfillsBuild(project) {
+    return {
+        input: 'node_modules/@arpadroid/arpadroid/src/polyfills/polyfills.js',
+        plugins: [nodeResolve({ browser: true, preferBuiltins: false }), terser({ keep_classnames: true })],
+        output: {
+            file: 'dist/arpadroid-polyfills.js',
+            format: 'esm'
+        }
+    };
+}
+
+/**
  * Rollup builds.
  * The different builds that can be created for different applications.
  */
 const rollupBuilds = {
     uiComponent(project, config = {}) {
+        if (!isSlim()) {
+            config.processBuilds = builds => {
+                builds.push(getPolyfillsBuild(project));
+            };
+        }
         return {
-            input: getInput(config),
-            plugins: getPlugins(project, config),
-            external: getExternal(config),
-            output: getOutput(project),
-            treeshake: true
+            ...getBuildDefaults(project, config)
+        };
+    },
+    library(project, config = {}) {
+        return {
+            ...getBuildDefaults(project, config)
         };
     }
 };
@@ -263,6 +328,10 @@ export function getBuild(projectName, buildName, config = {}) {
     const appBuild = rollupBuilds[buildName](project, buildConfig);
     const typesBuild = getTypesBuild();
     const build = [appBuild, typesBuild].filter(Boolean);
+    if (!isSlim() && typeof buildConfig.processBuilds === 'function') {
+        buildConfig.processBuilds(build);
+    }
+
     return {
         build,
         appBuild,

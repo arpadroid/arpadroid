@@ -27,6 +27,7 @@ function renderPreviewHead(_head) {
                 disabled
             />
             <link id="dark-styles" rel="stylesheet" href="/themes/dark/dark.bundled.final.css" disabled />
+            <script src="/arpadroid-polyfills.js"></script>
             <script type="module" src="/arpadroid-${projectName}.js"></script>
         `;
 
