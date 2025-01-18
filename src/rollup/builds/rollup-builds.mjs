@@ -182,24 +182,24 @@ export function getFatPlugins(project, config) {
     const plugins = [
         nodeResolve({ browser: true, preferBuiltins: false }),
         terser({
-            keep_classnames: false,
-            compress: {
-                // drop_console: true,
-                // drop_debugger: true,
-                // ecma: 2020,
-                // module: true,
-                // passes: 3,
-                // unsafe: true
-            },
-            mangle: {
-                // properties: {
-                //     regex: /^_/ // Only mangle properties that start with `_`
-                // }
-                // toplevel: true
-            },
-            format: {
-                // comments: false
-            }
+            keep_classnames: false
+            // compress: {
+            //     drop_console: true,
+            //     drop_debugger: true,
+            //     ecma: 2020,
+            //     module: true,
+            //     passes: 3,
+            //     unsafe: true
+            // },
+            // mangle: {
+            //     properties: {
+            //         regex: /^_/ // Only mangle properties that start with `_`
+            //     },
+            //     toplevel: true
+            // },
+            // format: {
+            //     comments: false
+            // }
         }),
         watch && fs.existsSync(path.join(cwd, 'src', 'themes')) && rollupWatch({ dir: 'src/themes' }),
         watch && getWatchers(deps, project),
@@ -254,6 +254,9 @@ export function getOutput(project) {
  */
 export function getExternal(config = {}) {
     const { external = [] } = config;
+    if (isSlim()) {
+        external.push('context');
+    }
     return (typeof external?.map === 'function' && external?.map(dep => `@arpadroid/${dep}`)) || [];
 }
 
@@ -275,10 +278,9 @@ export function getBuildDefaults(project, config) {
 
 /**
  * Returns the polyfills build configuration.
- * @param {Project} project
  * @returns {import('rollup').InputOptions}
  */
-export function getPolyfillsBuild(project) {
+export function getPolyfillsBuild() {
     return {
         input: 'node_modules/@arpadroid/arpadroid/src/polyfills/polyfills.js',
         plugins: [nodeResolve({ browser: true, preferBuiltins: false }), terser({ keep_classnames: true })],
@@ -297,7 +299,7 @@ const rollupBuilds = {
     uiComponent(project, config = {}) {
         if (!isSlim()) {
             config.processBuilds = builds => {
-                builds.push(getPolyfillsBuild(project));
+                builds.push(getPolyfillsBuild());
             };
         }
         return {
