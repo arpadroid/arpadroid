@@ -1,14 +1,21 @@
+/* eslint-disable sonarjs/no-duplicate-string */
+/**
+ * @typedef {import('./rollup-builds.types').BuildConfigType} BuildConfigType
+ * @typedef {import('./rollup-builds.types').BuildInterface} BuildInterface
+ * @typedef {import('rollup').RollupOptions} RollupOptions
+ * @typedef {import('rollup').Plugin} RollupPlugin
+ */
 /* eslint-disable security/detect-non-literal-fs-filename */
 import fs from 'fs';
 import path from 'path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-
 import { bundleStats } from 'rollup-plugin-bundle-stats';
 import gzipPlugin from 'rollup-plugin-gzip';
 import { dts } from 'rollup-plugin-dts';
 import multiEntry from '@rollup/plugin-multi-entry';
 import nodeResolve from '@rollup/plugin-node-resolve';
+// @ts-ignore
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import rollupAlias from '@rollup/plugin-alias';
 import rollupWatch from 'rollup-plugin-watch';
@@ -21,20 +28,23 @@ import json from '@rollup/plugin-json';
 import Project from '../../projectBuilder/project.mjs';
 import { mergeObjects } from '@arpadroid/tools/src/objectTool.js';
 import { logError } from '../../utils/terminalLogger.mjs';
+import typescript from 'rollup-plugin-typescript2';
 
-const argv = yargs(hideBin(process.argv)).argv;
+/** @type {{ watch?: boolean, slim?: boolean, deps?: string }} */
+// @ts-ignore
+const argv = yargs(hideBin(process.argv)).argv || {};
 const cwd = process.cwd();
-const DEPS = process.env.deps ?? argv.deps;
+const DEPS = process.env.deps ?? argv?.deps ?? '';
 const PROD = Boolean(process.env.production);
 const SLIM = argv?.slim;
-const WATCH = Boolean(!PROD && argv.watch);
+const WATCH = Boolean(!PROD && argv?.watch);
 
 /**
  * Returns whether the build should be slim.
  * @returns {boolean}
  */
 export function isSlim() {
-    return (process.env.arpadroid_slim && process.env.arpadroid_slim === 'true') ?? SLIM;
+    return Boolean((process.env.arpadroid_slim && process.env.arpadroid_slim === 'true') ?? SLIM);
 }
 
 /**
@@ -42,7 +52,7 @@ export function isSlim() {
  * @returns {boolean}
  */
 export function shouldWatch() {
-    return process.env.arpadroid_watch ?? WATCH;
+    return Boolean(process.env.arpadroid_watch ?? WATCH);
 }
 
 /**
@@ -59,8 +69,8 @@ export function preProcessDependencies(deps = DEPS) {
 
 /**
  * Returns the build configuration.
- * @param {Record<string, unknown>} config
- * @returns {Record<string, unknown>}
+ * @param {BuildConfigType} config
+ * @returns {BuildConfigType}
  */
 export function getBuildConfig(config = {}) {
     const envConfig = JSON.parse(process.env.ARPADROID_BUILD_CONFIG ?? '{}');
@@ -80,23 +90,44 @@ export function getBuildConfig(config = {}) {
 }
 
 /**
+ * Logs the rollup build process.
+ * @returns {RollupPlugin}
+ */
+export function debugPlugin() {
+    return {
+        name: 'debug',
+        resolveId(source) {
+            console.log('Resolving:', source);
+            return null;
+        },
+        load(id) {
+            console.log('Loading:', id);
+            return null;
+        }
+    };
+}
+
+/**
  * Returns the configuration for the typescript types build.
- * @returns {import('rollup').InputOptions}
+ * @returns {RollupOptions}
  */
 export function getTypesBuild() {
     const typesPath = path.join('src', 'types.d.ts');
     if (!fs.existsSync(typesPath)) {
-        return null;
+        console.log('typesPath not found');
+        return {};
     }
+    /** @type {RollupOptions} */
     return {
         input: './src/types.d.ts',
-        output: { file: path.join('dist', 'types.d.ts'), format: 'es' },
-        plugins: [dts()]
+        output: { file: path.join('dist', '@types/types.d.ts'), format: 'es' },
+        plugins: [dts({ respectExternal: isSlim() })]
     };
 }
+
 /**
  * Returns the rollup input configuration.
- * @param {Record<string, unknown>} config
+ * @param {BuildConfigType} config
  * @returns {string | string[]}
  */
 export function getInput(config = {}) {
@@ -119,10 +150,9 @@ export function getInput(config = {}) {
 
 /**
  * Returns the aliases for the project dependencies.
- * @param {string} projectName
+ * @param {string} [projectName]
  * @param {string[]} projects
- * @param {Project} project
- * @returns {import('rollup').Plugin}
+ * @returns {RollupPlugin | undefined}
  */
 export function getAliases(projectName, projects = []) {
     if (!Array.isArray(projects)) {
@@ -140,14 +170,15 @@ export function getAliases(projectName, projects = []) {
             return dep;
         })
     ].filter(item => typeof item !== 'undefined');
-    return aliases?.length && rollupAlias({ entries: aliases });
+    // @ts-ignore
+    return aliases?.length ? rollupAlias({ entries: aliases }) : undefined;
 }
 
 /**
  * Returns the watchers for the project dependencies.
  * @param {string[]} envDeps
  * @param {Project} project
- * @returns {import('rollup').Plugin[]}
+ * @returns {(RollupPlugin | null)[]}
  */
 export function getWatchers(envDeps = [], project) {
     const deps = [...new Set(envDeps.concat(project.getArpadroidDependencies()))];
@@ -160,12 +191,12 @@ export function getWatchers(envDeps = [], project) {
 /**
  * Returns the slim build rollup plugins configuration.
  * @param {Project} project
- * @param {Record<string, unknown>} config
- * @returns {import('rollup').Plugin[]}
+ * @param {BuildConfigType} config
+ * @returns {RollupPlugin[]}
  */
 export function getSlimPlugins(project, config = {}) {
     const { parent, aliases = [] } = config;
-    const plugins = [peerDepsExternal()];
+    const plugins = [peerDepsExternal(), nodeResolve({ browser: true, preferBuiltins: false })];
     plugins.push(getAliases(parent, aliases));
     return plugins.filter(Boolean);
 }
@@ -173,37 +204,21 @@ export function getSlimPlugins(project, config = {}) {
 /**
  * Returns the fat build rollup plugins configuration.
  * @param {Project} project
- * @param {Record<string, unknown>} config
- * @returns {import('rollup').Plugin[]}
+ * @param {BuildConfigType} config
+ * @returns {RollupPlugin[]}
  */
 export function getFatPlugins(project, config) {
-    const { watch = WATCH, deps, aliases = [] } = config;
+    const { watch = WATCH, deps, aliases } = config;
 
+    /** @type {(RollupPlugin  | unknown)[]} */
     const plugins = [
         nodeResolve({ browser: true, preferBuiltins: false }),
         terser({
             keep_classnames: false
-            // compress: {
-            //     drop_console: true,
-            //     drop_debugger: true,
-            //     ecma: 2020,
-            //     module: true,
-            //     passes: 3,
-            //     unsafe: true
-            // },
-            // mangle: {
-            //     properties: {
-            //         regex: /^_/ // Only mangle properties that start with `_`
-            //     },
-            //     toplevel: true
-            // },
-            // format: {
-            //     comments: false
-            // }
         }),
         watch && fs.existsSync(path.join(cwd, 'src', 'themes')) && rollupWatch({ dir: 'src/themes' }),
-        watch && getWatchers(deps, project),
-        deps?.length && multiEntry(),
+        Boolean(watch) && getWatchers(deps, project),
+        deps && deps?.length > 0 && multiEntry(),
         bundleStats(),
         getAliases(project.name, aliases),
         copy({
@@ -214,18 +229,23 @@ export function getFatPlugins(project, config) {
             filename: 'stats.html'
         })
     ];
+    // @ts-ignore
     return plugins.filter(Boolean);
 }
 
 /**
  * Returns the rollup plugins configuration.
  * @param {Project} project
- * @param {Record<string, unknown>} config
- * @returns {import('rollup').Plugin[]}
+ * @param {BuildConfigType} config
+ * @returns {RollupPlugin[]}
  */
 export function getPlugins(project, config) {
     const { slim, plugins = [] } = config;
     return [
+        typescript({
+            tsconfig: './tsconfig.json', // Use the config defined earlier
+            useTsconfigDeclarationDir: true
+        }),
         json(),
         ...(slim ? getSlimPlugins(project, config) : getFatPlugins(project, config)),
         buildStyles(project, config),
@@ -249,13 +269,13 @@ export function getOutput(project) {
 
 /**
  * Returns the external dependencies.
- * @param {Record<string, unknown>} config
+ * @param {BuildConfigType} config
  * @returns {string[]}
  */
 export function getExternal(config = {}) {
-    const { external = [] } = config;
+    const external = config?.external;
     if (isSlim()) {
-        external.push('context');
+        external?.push('context');
     }
     return (typeof external?.map === 'function' && external?.map(dep => `@arpadroid/${dep}`)) || [];
 }
@@ -263,8 +283,8 @@ export function getExternal(config = {}) {
 /**
  * Returns the default build configuration.
  * @param {Project} project
- * @param {Record<string, unknown>} config
- * @returns {import('rollup').InputOptions}
+ * @param {BuildConfigType} config
+ * @returns {import('rollup').RollupOptions}
  */
 export function getBuildDefaults(project, config) {
     return {
@@ -278,7 +298,7 @@ export function getBuildDefaults(project, config) {
 
 /**
  * Returns the polyfills build configuration.
- * @returns {import('rollup').InputOptions}
+ * @returns {RollupOptions}
  */
 export function getPolyfillsBuild() {
     return {
@@ -294,40 +314,42 @@ export function getPolyfillsBuild() {
 /**
  * Rollup builds.
  * The different builds that can be created for different applications.
+ * @type {Record<string, (project: Project, config: BuildConfigType) => RollupOptions>}
  */
 const rollupBuilds = {
     uiComponent(project, config = {}) {
         if (!isSlim()) {
+            /**
+             * Processes the builds.
+             * @param {RollupOptions[]} builds
+             */
             config.processBuilds = builds => {
                 builds.push(getPolyfillsBuild());
             };
         }
-        return {
-            ...getBuildDefaults(project, config)
-        };
+        return { ...getBuildDefaults(project, config) };
     },
     library(project, config = {}) {
-        return {
-            ...getBuildDefaults(project, config)
-        };
+        return { ...getBuildDefaults(project, config) };
     }
 };
 
 /**
  * Returns the build configuration for the specified project and build.
  * @param {string} projectName
- * @param {string} buildName
- * @param {Record<string, unknown>} config
- * @returns {Record<string, unknown> | undefined}
+ * @param {'uiComponent' | 'library'} buildName
+ * @param {BuildConfigType} config
+ * @returns {BuildInterface | undefined}
  */
 export function getBuild(projectName, buildName, config = {}) {
-    if (typeof rollupBuilds[buildName] !== 'function') {
+    const buildFn = rollupBuilds[buildName];
+    if (typeof buildFn !== 'function') {
         logError(`Invalid build name: ${buildName}`);
         return;
     }
     const buildConfig = getBuildConfig(config);
     const project = new Project(projectName, buildConfig);
-    const appBuild = rollupBuilds[buildName](project, buildConfig);
+    const appBuild = buildFn(project, buildConfig);
     const typesBuild = getTypesBuild();
     const build = [appBuild, typesBuild].filter(Boolean);
     if (!isSlim() && typeof buildConfig.processBuilds === 'function') {
@@ -350,6 +372,7 @@ export function getBuild(projectName, buildName, config = {}) {
             peerDepsExternal,
             alias: rollupAlias,
             watch: rollupWatch,
+            debugPlugin,
             terser
         }
     };

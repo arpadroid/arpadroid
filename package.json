@@ -27,8 +27,10 @@
     "homepage": "https://github.com/arpadroid/arpadroid#readme",
     "devDependencies": {
         "@babel/core": "^7.24.7",
+        "@babel/parser": "^7.26.5",
         "@babel/plugin-syntax-import-assertions": "^7.24.7",
         "@babel/preset-env": "^7.24.7",
+        "@babel/types": "^7.26.5",
         "@rollup/plugin-alias": "^5.1.0",
         "@rollup/plugin-babel": "^6.0.4",
         "@rollup/plugin-html": "^1.1.0",
@@ -80,6 +82,7 @@
         "rollup-plugin-dts": "^6.1.1",
         "rollup-plugin-gzip": "^4.0.0",
         "rollup-plugin-peer-deps-external": "^2.2.4",
+        "rollup-plugin-typescript2": "^0.36.0",
         "rollup-plugin-visualizer": "^5.14.0",
         "rollup-plugin-watch": "^1.0.4",
         "storybook": "^8.4.7",
