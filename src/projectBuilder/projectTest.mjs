@@ -3,7 +3,7 @@
  * @typedef {import('./project.mjs').default} Project
  */
 /* eslint-disable security/detect-non-literal-regexp */
-import { mergeObjects } from '@arpadroid/tools/src/objectTool.js';
+import { mergeObjects } from '@arpadroid/tools/src/objectTool/objectTool.js';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import { globSync } from 'glob';
