@@ -10,11 +10,15 @@ import fs from 'fs';
 import path from 'path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+/**
+ * Rollup plugins.
+ */
 import { bundleStats } from 'rollup-plugin-bundle-stats';
 import gzipPlugin from 'rollup-plugin-gzip';
 import { dts } from 'rollup-plugin-dts';
 import multiEntry from '@rollup/plugin-multi-entry';
 import nodeResolve from '@rollup/plugin-node-resolve';
+import json from '@rollup/plugin-json';
 // @ts-ignore
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import rollupAlias from '@rollup/plugin-alias';
@@ -22,13 +26,12 @@ import rollupWatch from 'rollup-plugin-watch';
 import terser from '@rollup/plugin-terser';
 import copy from 'rollup-plugin-copy';
 import { visualizer } from 'rollup-plugin-visualizer';
-
 import buildStyles from '../plugins/buildStyles.mjs';
-import json from '@rollup/plugin-json';
-import Project from '../../projectBuilder/project.mjs';
+import typescript from 'rollup-plugin-typescript2';
+
 import { mergeObjects } from '@arpadroid/tools/src/objectTool.js';
 import { logError } from '../../utils/terminalLogger.mjs';
-import typescript from 'rollup-plugin-typescript2';
+import Project from '../../projectBuilder/project.mjs';
 
 /** @type {{ watch?: boolean, slim?: boolean, deps?: string }} */
 // @ts-ignore
@@ -351,7 +354,7 @@ export function getBuild(projectName, buildName, config = {}) {
     const project = new Project(projectName, buildConfig);
     const appBuild = buildFn(project, buildConfig);
     const typesBuild = getTypesBuild();
-    const build = [appBuild, typesBuild].filter(Boolean);
+    const build = [appBuild].filter(Boolean);
     if (!isSlim() && typeof buildConfig.processBuilds === 'function') {
         buildConfig.processBuilds(build);
     }

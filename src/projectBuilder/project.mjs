@@ -2,6 +2,7 @@
  * @typedef {import('../rollup/builds/rollup-builds.types').BuildConfigType} BuildConfigType
  * @typedef {import('rollup').RollupOptions} RollupOptions
  * @typedef {import('rollup').InputOption} InputOption
+ * @typedef {import('./project.types').CompileTypesType} CompileTypesType
  */
 /* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable security/detect-non-literal-fs-filename */
@@ -16,8 +17,10 @@ import yargs from 'yargs';
 import StylesheetBundler from '@arpadroid/stylesheet-bundler';
 import { spawn } from 'child_process';
 import chalk from 'chalk';
-import { log, logStyle } from '../utils/terminalLogger.mjs';
+import { log, logStyle, logTask } from '../utils/terminalLogger.mjs';
 import ProjectTest from './projectTest.mjs';
+import { glob } from 'glob';
+import { dts } from 'rollup-plugin-dts';
 
 const cwd = process.cwd();
 /** @type {{ watch?: boolean, slim?: boolean, deps?: string, minify: string, storybook: Record<string, unknown>, 'style-patterns': string, verbose:boolean  }} */
@@ -207,11 +210,100 @@ class Project {
         await this.bundleI18n(config);
         process.env.ARPADROID_BUILD_CONFIG = JSON.stringify(config);
         const rollupConfig = (await import(`${this.path}/rollup.config.mjs`)).default;
+
         await this.rollup(rollupConfig, config);
+        await this.buildTypes();
+
         this.runStorybook(config);
         this.watch(rollupConfig, config);
         !slim && log.task(this.name, logStyle.success('Build complete, have a nice day ;)'));
         return true;
+    }
+
+    /**
+     * Builds the project types.
+     */
+    async buildTypes() {
+        logTask(this.name, 'Building types');
+        await this.compileTypes();
+        await this.compileTypeDeclarations();
+        await this.addEntryTypesFile();
+        //  await this.rollupTypes(rollupConfig, config);
+    }
+
+    /**
+     * Compiles the types.
+     * @param {CompileTypesType} config
+     */
+    async compileTypes(config = {}) {
+        let { inputDir = 'src/', destination = this.path + '/dist/@types/' } = config;
+        const { filePattern = '**/*.types.d.ts', prependFiles = [`${inputDir}types.d.ts`] } = config;
+
+        !inputDir.endsWith('/') && (inputDir += '/');
+        !destination.endsWith('/') && (destination += '/');
+        const files = [
+            ...Array.from(prependFiles),
+            ...(glob.sync(inputDir + filePattern, { cwd: this.path }) || [])
+        ];
+        files.forEach(file => {
+            const dest = file.replace(inputDir, destination);
+            const dir = path.dirname(dest);
+            !fs.existsSync(dir) && fs.mkdirSync(dir, { recursive: true });
+            fs.copyFileSync(`${this.path}/${file}`, dest);
+        });
+    }
+
+    /**
+     * Creates an types.d.ts file in the dist directory and writes the content to it.
+     * @returns {Promise<boolean>}
+     * @private
+     */
+    async addEntryTypesFile() {
+        const types = `
+        export * from './types';
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        export * from './index';
+        `;
+        writeFileSync(`${this.path}/dist/@types/types.compiled.d.ts`, types);
+        return true;
+    }
+
+    /**
+     * Bundles the project using rollup.
+     * @param {RollupOptions[]} rollupConfig
+     * @param {BuildConfigType} config
+     * @returns {Promise<boolean>}
+     */
+    async rollupTypes(rollupConfig, config) {
+        const typesPath = path.join('src', 'types.d.ts');
+        if (!fs.existsSync(typesPath)) {
+            console.log('typesPath not found');
+            return true;
+        }
+        const conf = {
+            input: ['./dist/@types/types.compiled.d.ts'],
+            output: {
+                file: path.join('dist', 'types.d.ts'),
+                /** @type {import('rollup').ModuleFormat} */
+                format: 'es'
+            },
+            plugins: [dts({ respectExternal: config.slim })]
+        };
+        /** @type {RollupOptions} */
+        return await this.rollup([conf], config, 'Rolling up types');
+    }
+
+    compileTypeDeclarations() {
+        const cmd = `cd ${this.path} && tsc --outDir dist/@types --declaration --emitDeclarationOnly`;
+        return new Promise((resolve, reject) => {
+            const child = spawn(cmd, { shell: true, stdio: 'inherit' });
+            child.on('close', code => {
+                code === 0
+                    ? resolve(true)
+                    : reject(new Error(`Failed to compile types for ${this.name}. Exit code: ${code}`));
+            });
+        });
     }
 
     /**
@@ -344,11 +436,12 @@ class Project {
      * Bundles the project using rollup.
      * @param {RollupOptions[]} rollupConfig
      * @param {BuildConfigType} config
+     * @param {string} [heading]
      * @returns {Promise<boolean>}
      */
-    async rollup(rollupConfig, config) {
+    async rollup(rollupConfig, config = {}, heading = 'Rolling up') {
         const { aliases = [] } = config;
-        VERBOSE || (!config.slim && log.task(this.name, 'Rolling up.'));
+        VERBOSE || (!config.slim && log.task(this.name, heading));
         const appBuild = rollupConfig[0];
         const plugins = appBuild.plugins;
         if (aliases?.length && Array.isArray(plugins)) {
