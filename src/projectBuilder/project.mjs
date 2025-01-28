@@ -36,7 +36,9 @@ const STYLE_SORT = ['ui', 'lists', 'navigation', 'messages', 'form'];
 const VERBOSE = Boolean(argv.verbose ?? process.env.verbose);
 
 class Project {
+    ////////////////////////////////
     // #region INITIALIZATION
+    ////////////////////////////////
     /**
      * Initializes a new project instance.
      * @param {string} name
@@ -179,7 +181,7 @@ class Project {
 
     // #endregion
 
-    // #region INSTALL
+    // #region Install
     async install() {
         log.task(this.name, 'Installing project.');
         const cmd = `cd ${this.path} && npm install`;
@@ -192,20 +194,25 @@ class Project {
         });
     }
 
-    // #endregion
+    // #endregion Install
 
-    // #region BUILD
+    ////////////////////////////
+    // #region Build
+    ////////////////////////////
     /**
      * Builds the project.
      * @param {BuildConfigType} _config
      * @returns {Promise<boolean>}
      */
     async build(_config = {}) {
+        process.chdir(this.path);
         const config = await this.getBuildConfig(_config);
         const slim = config.slim ?? SLIM;
         this.logBuild(config);
         await this.cleanBuild(config);
         !slim && (await this.buildDependencies());
+        // Go back to the project directory as the dependencies may have changed it =)
+        process.chdir(this.path);
         await this.bundleStyles(config);
         await this.bundleI18n(config);
         process.env.ARPADROID_BUILD_CONFIG = JSON.stringify(config);
@@ -228,44 +235,65 @@ class Project {
         await this.compileTypes();
         await this.compileTypeDeclarations();
         await this.addEntryTypesFile();
+        await this.distTypes();
         //  await this.rollupTypes(rollupConfig, config);
     }
 
     /**
-     * Compiles the types.
+     * Copies all types.d.ts files to the dist/@types directory maintaining the directory structure.
      * @param {CompileTypesType} config
+     * @returns {Promise<unknown[]>}
      */
     async compileTypes(config = {}) {
-        let { inputDir = 'src/', destination = this.path + '/dist/@types/' } = config;
-        const { filePattern = '**/*.types.d.ts', prependFiles = [`${inputDir}types.d.ts`] } = config;
+        // Create the dist/@types directory if it does not exist.
+        if (!fs.existsSync(`${this.path}/dist/@types`)) {
+            fs.mkdirSync(`${this.path}/dist/@types`, { recursive: true });
+        }
 
+        // Get the input and destination directories.
+        let { inputDir = this.path + '/src/', destination = this.path + '/.types/' } = config;
+        const { filePattern = '**/*.types.d.ts', prependFiles = [`${inputDir}types.d.ts`] } = config;
         !inputDir.endsWith('/') && (inputDir += '/');
         !destination.endsWith('/') && (destination += '/');
+
+        // Get the files to copy.
         const files = [
             ...Array.from(prependFiles),
             ...(glob.sync(inputDir + filePattern, { cwd: this.path }) || [])
         ];
-        files.forEach(file => {
+        // Copy the files to the destination directory.
+        /** @type {Promise<unknown>[]} */
+        const promises = [];
+        files.forEach(async file => {
             const dest = file.replace(inputDir, destination);
             const dir = path.dirname(dest);
             !fs.existsSync(dir) && fs.mkdirSync(dir, { recursive: true });
-            fs.copyFileSync(`${this.path}/${file}`, dest);
+            promises.push(fs.promises.copyFile(`${file}`, dest));
         });
+
+        return Promise.all(promises);
+    }
+
+    /**
+     * Copies the directory .types to dist/@types.
+     */
+    async distTypes() {
+        const typesPath = path.join(this.path + '/dist', '@types');
+        if (!fs.existsSync(typesPath)) {
+            fs.mkdirSync(typesPath, { recursive: true });
+        }
+        cpSync(`${this.path}/.types`, typesPath, { recursive: true });
     }
 
     /**
      * Creates an types.d.ts file in the dist directory and writes the content to it.
      * @returns {Promise<boolean>}
-     * @private
      */
     async addEntryTypesFile() {
-        const types = `
-        export * from './types';
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        export * from './index';
-        `;
-        writeFileSync(`${this.path}/dist/@types/types.compiled.d.ts`, types);
+        const indexContents = readFileSync(`${this.path}/.types/index.d.ts`, 'utf8');
+        const typesContents = readFileSync(`${this.path}/.types/types.d.ts`, 'utf8');
+        const file = `${this.path}/.types/types.compiled.d.ts`;
+        writeFileSync(file, `${indexContents}${typesContents}`);
         return true;
     }
 
@@ -295,7 +323,7 @@ class Project {
     }
 
     compileTypeDeclarations() {
-        const cmd = `cd ${this.path} && tsc --outDir dist/@types --declaration --emitDeclarationOnly`;
+        const cmd = `cd ${this.path} && tsc -b --declaration --emitDeclarationOnly`;
         return new Promise((resolve, reject) => {
             const child = spawn(cmd, { shell: true, stdio: 'inherit' });
             child.on('close', code => {
@@ -395,7 +423,6 @@ class Project {
             log.error(`Failed to build ${logStyle.subject(this.name)} dependencies`, err);
             return Promise.reject(err);
         });
-
         process.env.arpadroid_slim = '';
         return rv;
     }

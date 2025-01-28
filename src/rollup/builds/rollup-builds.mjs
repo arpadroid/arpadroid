@@ -213,7 +213,7 @@ export function getSlimPlugins(project, config = {}) {
 export function getFatPlugins(project, config) {
     const { watch = WATCH, deps, aliases } = config;
 
-    /** @type {(RollupPlugin  | unknown)[]} */
+    /** @type {(RollupPlugin  | any)[]} */
     const plugins = [
         nodeResolve({ browser: true, preferBuiltins: false }),
         terser({
@@ -232,7 +232,7 @@ export function getFatPlugins(project, config) {
             filename: 'stats.html'
         })
     ];
-    // @ts-ignore
+
     return plugins.filter(Boolean);
 }
 
