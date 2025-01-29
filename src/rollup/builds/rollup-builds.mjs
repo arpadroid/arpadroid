@@ -131,9 +131,10 @@ export function getTypesBuild() {
 /**
  * Returns the rollup input configuration.
  * @param {BuildConfigType} config
+ * @param {Project} project
  * @returns {string | string[]}
  */
-export function getInput(config = {}) {
+export function getInput(project, config = {}) {
     const { deps, slim } = config;
     const entry = 'src/index.js';
     if (slim || !deps?.length) {
@@ -142,7 +143,8 @@ export function getInput(config = {}) {
     const rv = [entry];
     deps.forEach(dep => {
         const depPath = path.join('node_modules', '@arpadroid', dep, 'dist', `arpadroid-${dep}.js`);
-        if (fs.existsSync(path.join(cwd, depPath))) {
+        const location = path.join(project.path, depPath);
+        if (fs.existsSync(location)) {
             rv.push(depPath);
         } else {
             logError(`Dependency ${dep} not found`, { depPath });
@@ -245,7 +247,7 @@ export function getFatPlugins(project, config) {
 export function getPlugins(project, config) {
     const { slim, plugins = [] } = config;
     return [
-        typescript({
+        config.buildTypes !== false && typescript({
             tsconfig: './tsconfig.json', // Use the config defined earlier
             useTsconfigDeclarationDir: true
         }),
@@ -254,7 +256,7 @@ export function getPlugins(project, config) {
         buildStyles(project, config),
         gzipPlugin(),
         ...plugins
-    ].filter(Boolean);
+    ].filter(plugin => plugin !== false);
 }
 
 /**
@@ -291,7 +293,7 @@ export function getExternal(config = {}) {
  */
 export function getBuildDefaults(project, config) {
     return {
-        input: getInput(config),
+        input: getInput(project, config),
         plugins: getPlugins(project, config),
         external: getExternal(config),
         output: getOutput(project),

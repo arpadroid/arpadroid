@@ -219,7 +219,7 @@ class Project {
         const rollupConfig = (await import(`${this.path}/rollup.config.mjs`)).default;
 
         await this.rollup(rollupConfig, config);
-        await this.buildTypes();
+        await this.buildTypes(rollupConfig, config);
 
         this.runStorybook(config);
         this.watch(rollupConfig, config);
@@ -229,13 +229,20 @@ class Project {
 
     /**
      * Builds the project types.
+     * @param {RollupOptions[]} rollupConfig
+     * @param {BuildConfigType} config
+     * @returns {Promise<boolean>}
      */
-    async buildTypes() {
+    async buildTypes(rollupConfig, config) {
+        if (config?.buildTypes === false) {
+            return true;
+        }
         logTask(this.name, 'Building types');
         await this.compileTypes();
         await this.compileTypeDeclarations();
         await this.addEntryTypesFile();
         await this.distTypes();
+        return true;
         //  await this.rollupTypes(rollupConfig, config);
     }
 
