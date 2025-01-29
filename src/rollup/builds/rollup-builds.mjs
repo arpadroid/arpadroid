@@ -247,7 +247,7 @@ export function getFatPlugins(project, config) {
 export function getPlugins(project, config) {
     const { slim, plugins = [] } = config;
     return [
-        config.buildTypes !== false && typescript({
+        config.buildTypes === true && typescript({
             tsconfig: './tsconfig.json', // Use the config defined earlier
             useTsconfigDeclarationDir: true
         }),

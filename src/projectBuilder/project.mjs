@@ -167,6 +167,7 @@ class Project {
         this.fileConfig = (await this.getFileConfig()) || {};
         return mergeObjects(
             {
+                buildTypes: false,
                 logHeading: true,
                 ...this.fileConfig
             },
@@ -234,7 +235,7 @@ class Project {
      * @returns {Promise<boolean>}
      */
     async buildTypes(rollupConfig, config) {
-        if (config?.buildTypes === false) {
+        if (config?.buildTypes !== true) {
             return true;
         }
         logTask(this.name, 'Building types');
