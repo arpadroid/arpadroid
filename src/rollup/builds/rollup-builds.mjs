@@ -164,7 +164,7 @@ export function getAliases(projectName, projects = []) {
         logError('Invalid projects configuration, expecting an array instead got: ', projects);
     }
     const aliases = [
-        projectName && { find: `@arpadroid/${projectName}`, replacement: `${cwd}/src/index.js` },
+        projectName && { find: `@arpadroid/${projectName}`, replacement: path.resolve('./src/index.js') },
         projects?.map(dep => {
             if (typeof dep === 'string') {
                 return {
@@ -202,7 +202,8 @@ export function getWatchers(envDeps = [], project) {
 export function getSlimPlugins(project, config = {}) {
     const { parent, aliases = [] } = config;
     const plugins = [peerDepsExternal(), nodeResolve({ browser: true, preferBuiltins: false })];
-    plugins.push(getAliases(parent, aliases));
+    const _aliases = getAliases(parent, aliases);
+    plugins.push(_aliases);
     return plugins.filter(Boolean);
 }
 
@@ -247,10 +248,11 @@ export function getFatPlugins(project, config) {
 export function getPlugins(project, config) {
     const { slim, plugins = [] } = config;
     return [
-        config.buildTypes === true && typescript({
-            tsconfig: './tsconfig.json', // Use the config defined earlier
-            useTsconfigDeclarationDir: true
-        }),
+        config.buildTypes === true &&
+            typescript({
+                tsconfig: './tsconfig.json', // Use the config defined earlier
+                useTsconfigDeclarationDir: true
+            }),
         json(),
         ...(slim ? getSlimPlugins(project, config) : getFatPlugins(project, config)),
         buildStyles(project, config),
