@@ -1,5 +1,5 @@
 import { usagePanelDecorator } from './decorators';
-import { mergeObjects } from '@arpadroid/tools/src/objectTool/objectTool.js';
+import { mergeObjects } from '../../node_modules/@arpadroid/tools/src/objectTool/objectTool.js';
 
 /** @type { import('@storybook/web-components').Preview } */
 const defaultConfig = {

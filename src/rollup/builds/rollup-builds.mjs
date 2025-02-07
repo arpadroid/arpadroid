@@ -29,7 +29,7 @@ import { visualizer } from 'rollup-plugin-visualizer';
 import buildStyles from '../plugins/buildStyles.mjs';
 import typescript from 'rollup-plugin-typescript2';
 
-import { mergeObjects } from '@arpadroid/tools/src/objectTool/objectTool.js';
+import { mergeObjects } from '../../../node_modules/@arpadroid/tools/src/objectTool/objectTool.js';
 import { logError } from '../../utils/terminalLogger.mjs';
 import Project from '../../projectBuilder/project.mjs';
 

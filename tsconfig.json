@@ -1,25 +1,6 @@
 {
+    "extends": "./src/tsconfig/nodenext/tsconfig.json",
     "compilerOptions": {
-        "resolveJsonModule": true,
-        "declaration": true,
-        "moduleResolution": "node",
-        "emitDeclarationOnly": false,
-        "declarationMap": true,
-        "strict": true,
-        "module": "ESNext",
-        "target": "ESNext",
-        "esModuleInterop": true,
-        "allowJs": true,
-        "checkJs": true,
-        // "noImplicitAny": true,
-        "types": ["react", "node"],
-        "typeRoots": ["./node_modules/@types", "./node_modules/@arpadroid/arpadroid/node_modules/@types"],
-        "jsx": "react",
-        // "incremental": true,
-        // "tsBuildInfoFile": "./.tsbuildinfo",
-        /**
-         * @warning: props below must be overriden in the project's tsconfig.json in order to take effect.
-         */
         "rootDir": "./src",
         "outDir": "./.types"
         // "composite": true

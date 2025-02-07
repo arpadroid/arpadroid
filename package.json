@@ -3,6 +3,7 @@
     "version": "0.0.1",
     "description": "Has a few utilities to manage and bundle @arpadroid packages",
     "main": "index.js",
+    "type": "module",
     "scripts": {
         "build:project": "node ./scripts/build-project.js",
         "test": "node ./scripts/test-projects.mjs --build --storybook --jest --ci",
