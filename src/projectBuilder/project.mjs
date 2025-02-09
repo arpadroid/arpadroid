@@ -31,7 +31,18 @@ const MINIFY = Boolean(argv.minify ?? process.env.minify);
 const WATCH = Boolean(argv.watch ?? process.env.watch);
 const STORYBOOK_PORT = argv.storybook ?? process.env.storybook;
 const STYLE_PATTERNS = argv['style-patterns'];
-const DEPENDENCY_SORT = ['tools', 'i18n', 'application', 'ui', 'lists', 'navigation', 'messages', 'forms'];
+const DEPENDENCY_SORT = [
+    'tools',
+    'i18n',
+    'ui',
+    'services',
+    'resources',
+    'lists',
+    'navigation',
+    'messages',
+    'forms',
+    'application'
+];
 const STYLE_SORT = ['ui', 'lists', 'navigation', 'messages', 'form'];
 const VERBOSE = Boolean(argv.verbose ?? process.env.verbose);
 
@@ -259,7 +270,7 @@ class Project {
         }
 
         // Get the input and destination directories.
-        let { inputDir = this.path + '/src/', destination = this.path + '/.types/' } = config;
+        let { inputDir = this.path + '/src/', destination = this.path + '/.tmp/.types/' } = config;
         const { filePattern = '**/*.types.d.ts', prependFiles = [`${inputDir}types.d.ts`] } = config;
         !inputDir.endsWith('/') && (inputDir += '/');
         !destination.endsWith('/') && (destination += '/');
@@ -290,7 +301,7 @@ class Project {
         if (!fs.existsSync(typesPath)) {
             fs.mkdirSync(typesPath, { recursive: true });
         }
-        cpSync(`${this.path}/.types`, typesPath, { recursive: true });
+        cpSync(`${this.path}/.tmp/.types`, typesPath, { recursive: true });
     }
 
     /**
@@ -298,10 +309,11 @@ class Project {
      * @returns {Promise<boolean>}
      */
     async addEntryTypesFile() {
-        const indexContents = readFileSync(`${this.path}/.types/index.d.ts`, 'utf8');
-        const typesContents = readFileSync(`${this.path}/.types/types.d.ts`, 'utf8');
-        const file = `${this.path}/.types/types.compiled.d.ts`;
-        writeFileSync(file, `${indexContents}${typesContents}`);
+        const indexContents = readFileSync(`${this.path}/.tmp/.types/index.d.ts`, 'utf8');
+        const typesContents = readFileSync(`${this.path}/.tmp/.types/types.d.ts`, 'utf8');
+        const file = `${this.path}/.tmp/.types/types.compiled.d.ts`;
+        const contents = `${indexContents}\n\n${typesContents}`;
+        writeFileSync(file, contents);
         return true;
     }
 
