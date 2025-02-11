@@ -23,13 +23,14 @@ import { glob } from 'glob';
 import { dts } from 'rollup-plugin-dts';
 
 const cwd = process.cwd();
-/** @type {{ watch?: boolean, slim?: boolean, deps?: string, minify: string, storybook: Record<string, unknown>, 'style-patterns': string, verbose:boolean  }} */
+/** @type {{ watch?: boolean, slim?: boolean, deps?: string, minify: string, storybook: Record<string, unknown>, 'style-patterns': string, verbose:boolean, noTypes:boolean  }} */
 // @ts-ignore
 const argv = yargs(hideBin(process.argv)).argv;
 const SLIM = Boolean(argv.slim ?? process.env.slim);
 const MINIFY = Boolean(argv.minify ?? process.env.minify);
 const WATCH = Boolean(argv.watch ?? process.env.watch);
 const STORYBOOK_PORT = argv.storybook ?? process.env.storybook;
+const NO_TYPES = Boolean(argv.noTypes ?? process.env.noTypes);
 const STYLE_PATTERNS = argv['style-patterns'];
 const DEPENDENCY_SORT = [
     'tools',
@@ -218,6 +219,7 @@ class Project {
      */
     async build(_config = {}) {
         process.chdir(this.path);
+        this.buildStartTime = Date.now();
         const config = await this.getBuildConfig(_config);
         const slim = config.slim ?? SLIM;
         this.logBuild(config);
@@ -235,8 +237,28 @@ class Project {
 
         this.runStorybook(config);
         this.watch(rollupConfig, config);
-        !slim && log.task(this.name, logStyle.success('Build complete, have a nice day ;)'));
+        this.buildEndTime = Date.now();
+        !slim && this.logBuildComplete();
         return true;
+    }
+
+    logBuildComplete() {
+        log.task(
+            this.name,
+            logStyle.success(`Build complete in ${this.getBuildSeconds()} seconds, have a nice day ;)`)
+        );
+    }
+
+    /**
+     * Returns the build time in seconds.
+     * @returns {string | false | 0 | undefined}
+     */
+    getBuildSeconds() {
+        return (
+            this.buildEndTime &&
+            this.buildStartTime &&
+            ((this.buildEndTime - this.buildStartTime) / 1000).toFixed(2)
+        );
     }
 
     /**
@@ -246,12 +268,12 @@ class Project {
      * @returns {Promise<boolean>}
      */
     async buildTypes(rollupConfig, config) {
-        if (config?.buildTypes !== true) {
+        if (config?.buildTypes !== true || NO_TYPES) {
             return true;
         }
-        logTask(this.name, 'Building types');
+        // logTask(this.name, 'Building types');
         await this.compileTypes();
-        await this.compileTypeDeclarations();
+        await this.compileTypeDeclarations(config);
         await this.addEntryTypesFile();
         await this.distTypes();
         return true;
@@ -342,8 +364,14 @@ class Project {
         return await this.rollup([conf], config, 'Rolling up types');
     }
 
-    compileTypeDeclarations() {
-        const cmd = `cd ${this.path} && tsc -b --declaration --emitDeclarationOnly`;
+    /**
+     * Compiles the types for the project.
+     * @param {BuildConfigType} _config
+     * @returns {Promise<boolean>}
+     */
+    compileTypeDeclarations(_config) {
+        const watchString = WATCH ? '--watch --preserveWatchOutput &' : '';
+        const cmd = `cd ${this.path} && tsc -b --declaration --emitDeclarationOnly ${watchString}`;
         return new Promise((resolve, reject) => {
             const child = spawn(cmd, { shell: true, stdio: 'inherit' });
             child.on('close', code => {
