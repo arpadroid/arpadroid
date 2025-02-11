@@ -1,6 +1,6 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 /**
- * @typedef {import('./rollup-builds.types').BuildConfigType} BuildConfigType
+ * @typedef {import('./rollup-builds.types.js').BuildConfigType} BuildConfigType
  * @typedef {import('./rollup-builds.types').BuildInterface} BuildInterface
  * @typedef {import('rollup').RollupOptions} RollupOptions
  * @typedef {import('rollup').Plugin} RollupPlugin
@@ -29,7 +29,7 @@ import { visualizer } from 'rollup-plugin-visualizer';
 import buildStyles from '../plugins/buildStyles.mjs';
 import typescript from 'rollup-plugin-typescript2';
 
-import { mergeObjects } from '../../../node_modules/@arpadroid/tools/src/objectTool/objectTool.js';
+import { mergeObjects } from '@arpadroid/tools/object';
 import { logError } from '../../utils/terminalLogger.mjs';
 import Project from '../../projectBuilder/project.mjs';
 

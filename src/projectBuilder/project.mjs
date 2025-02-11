@@ -7,7 +7,7 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable security/detect-non-literal-fs-filename */
 import { rollup, watch as rollupWatch } from 'rollup';
-import { mergeObjects } from '../../node_modules/@arpadroid/tools/src/objectTool/objectTool.js';
+import { mergeObjects } from '@arpadroid/tools/object';
 import { readFileSync, existsSync, writeFileSync, cpSync, rmSync, readdirSync, mkdirSync } from 'fs';
 import alias from '@rollup/plugin-alias';
 import fs from 'fs';

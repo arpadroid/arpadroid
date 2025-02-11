@@ -1,4 +1,4 @@
-import { mergeObjects } from '../../node_modules/@arpadroid/tools/src/index.js';
+import { mergeObjects } from '@arpadroid/tools/object';
 
 /**
  * Returns the context object for the current story.

@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "useDefineForClassFields": true,
         "allowJs": true,
         "checkJs": true,
         "declaration": true,
@@ -9,23 +10,24 @@
         "module": "ESNext",
         "moduleResolution": "node",
         "resolveJsonModule": true,
-        "strict": true,
         "target": "ESNext",
         "types": ["react", "node"],
         "typeRoots": [
             "../../../node_modules/@types",
             "../../../node_modules/@arpadroid/arpadroid/node_modules/@types"
         ],
-        "jsx": "react"
+        "jsx": "react",
+        // Strict Mode Settings
+        "strict": true,
         /**
          * @warning: props rootDir and outdir must be overriden in the project's tsconfig.json in order to take effect.
             "rootDir": "./src",
             "outDir": "./.tmp/.types"
          */
-        // "noImplicitAny": true,
-        // "incremental": true,
+        "incremental": true,
         // "tsBuildInfoFile": "./.tsbuildinfo",
-        // "composite": true,
+        "composite": true,
+        "skipLibCheck": true
     },
     "include": ["src/index.js", "src/**/*"],
     "exclude": ["node_modules", "dist", "**/*.test.ts"]
