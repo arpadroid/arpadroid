@@ -218,23 +218,18 @@ class Project {
      * @returns {Promise<boolean>}
      */
     async build(_config = {}) {
-        process.chdir(this.path);
         this.buildStartTime = Date.now();
         const config = await this.getBuildConfig(_config);
         const slim = config.slim ?? SLIM;
         this.logBuild(config);
         await this.cleanBuild(config);
         !slim && (await this.buildDependencies());
-        // Go back to the project directory as the dependencies may have changed it =)
-        process.chdir(this.path);
         await this.bundleStyles(config);
         await this.bundleI18n(config);
         process.env.ARPADROID_BUILD_CONFIG = JSON.stringify(config);
         const rollupConfig = (await import(`${this.path}/rollup.config.mjs`)).default;
-
         await this.rollup(rollupConfig, config);
         await this.buildTypes(rollupConfig, config);
-
         this.runStorybook(config);
         this.watch(rollupConfig, config);
         this.buildEndTime = Date.now();
