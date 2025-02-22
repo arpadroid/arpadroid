@@ -2,7 +2,8 @@
     "extends": "./src/tsconfig/nodenext/tsconfig.json",
     "compilerOptions": {
         "rootDir": "./src",
-        "outDir": "./.types"
+        "outDir": "./.types",
+        "jsx": "react"
         // "composite": true
     },
     "include": ["src/index.js", "src/**/*"],

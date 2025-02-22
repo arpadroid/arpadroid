@@ -1,9 +1,8 @@
 import React from 'react';
 import { Source } from '@storybook/blocks';
 import { AddonPanel } from '@storybook/components';
-
 import { addons, types } from '@storybook/manager-api';
-import { getStoryContextValue } from './storybookTool';
+import { getStoryContextValue } from './storybookTool.js';
 
 export function usagePanelAddon() {
     addons.register('usage/panel', api => {

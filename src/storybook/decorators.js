@@ -1,4 +1,4 @@
-import { setStoryContextValue } from './storybookTool';
+import { setStoryContextValue } from './storybookTool.js';
 /**
  * A decorator that sets the usage panel for the story.
  * @returns {import('@storybook/react').StoryDecorator}
