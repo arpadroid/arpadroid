@@ -13,6 +13,7 @@
         "checkJs": true,
         "typeRoots": ["./node_modules/@types", "./node_modules/@arpadroid/arpadroid/node_modules/@types"],
         "rootDir": "./src",
+        "skipLibCheck": true,
         "outDir": "./.tmp/.types"
     },
     "include": ["src/index.js", "src/**/*"],

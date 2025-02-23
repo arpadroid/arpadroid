@@ -2,3 +2,5 @@
 bundle-stats.html
 /dist
 .tsbuildinfo
+.tmp/
+src/i18n

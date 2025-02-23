@@ -2,10 +2,10 @@
     "extends": "./src/tsconfig/nodenext/tsconfig.json",
     "compilerOptions": {
         "rootDir": "./src",
-        "outDir": "./.types",
-        "jsx": "react"
-        // "composite": true
+        "outDir": "./.tmp/.types",
+        "jsx": "react",
+        "skipLibCheck": true
     },
-    "include": ["src/index.js", "src/**/*"],
-    "exclude": ["node_modules", "dist", "**/*.test.ts"]
+    "include": ["src/**/*"],
+    "exclude": ["./node_modules", "dist", "**/*.test.ts", "**/*.test.js", "./dist/@types"]
 }

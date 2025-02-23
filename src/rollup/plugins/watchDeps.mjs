@@ -3,7 +3,7 @@ import { existsSync } from 'fs';
 
 /**
  * Watches for changes in the project's dependencies and rebuilds the styles.
- * @param {import('../../project').default} project
+ * @param {import('../../projectBuilder/project.mjs').default} project
  * @returns {import('rollup').Plugin}
  */
 export default function watchDeps(project) {

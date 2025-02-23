@@ -1,3 +1,6 @@
+/**
+ * @typedef {import('webpack').Configuration} WebpackConfig
+ */
 import path, { basename } from 'path';
 import fs from 'fs';
 import Project from '../projectBuilder/project.mjs';
@@ -81,10 +84,20 @@ const config = {
     docs: { autodocs: 'tag' },
     previewBody: renderPreviewBody,
     previewHead: renderPreviewHead,
+    /**
+     * Configures the webpack.
+     * @param {WebpackConfig} config - The webpack configuration.
+     * @returns {Promise<WebpackConfig>} The updated webpack configuration.
+     */
     webpackFinal: async config => {
+        config.watchOptions = config.watchOptions || {};
+        config.module = config.module || {};
+        config.module.rules = config.module.rules || [];
+        config.resolve = config.resolve || {};
         config.watchOptions.aggregateTimeout = 1200;
         config.watchOptions.ignored = ['**/*.css'];
         config.module.rules = config.module.rules.filter(rule => {
+            // @ts-ignore
             const isCSSRule = rule?.test?.toString().includes('css');
             return isCSSRule ? false : true;
         });
@@ -93,6 +106,11 @@ const config = {
         config.resolve.alias['@storybook/addon-actions'] = sbRoot + '/addon-actions';
         return config;
     },
+    /**
+     * Configures the environment variables.
+     * @param {Record<string, unknown>} config - The environment variables.
+     * @returns {Record<string, unknown>} The updated environment variables.
+     */
     env: config => ({
         ...config,
         PROJECT_CONFIG: JSON.stringify(projectConfig)

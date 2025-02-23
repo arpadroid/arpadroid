@@ -12,10 +12,9 @@ export function usagePanelAddon() {
             type: types.PANEL,
             render: props => {
                 const story = api.getCurrentStoryData();
-                const usage = getStoryContextValue(story?.id, 'usage');
-
+                const usage = String(getStoryContextValue(story?.id, 'usage'));
                 return (
-                    <AddonPanel active={props.active}>
+                    <AddonPanel active={Boolean(props.active)}>
                         <Source code={usage} language="html" dark format="html" />
                     </AddonPanel>
                 );

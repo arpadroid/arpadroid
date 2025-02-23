@@ -1,8 +1,9 @@
 /**
- * @typedef {import('../rollup/builds/rollup-builds.types').BuildConfigType} BuildConfigType
+ * @typedef {import('../rollup/builds/rollup-builds.types.js').BuildConfigType} BuildConfigType
  * @typedef {import('rollup').RollupOptions} RollupOptions
  * @typedef {import('rollup').InputOption} InputOption
- * @typedef {import('./project.types').CompileTypesType} CompileTypesType
+ * @typedef {import('./project.types.js').CompileTypesType} CompileTypesType
+ * @typedef {import('./project.types.js').CommandArgsType} CommandArgsType
  */
 /* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable security/detect-non-literal-fs-filename */
@@ -13,18 +14,18 @@ import alias from '@rollup/plugin-alias';
 import fs from 'fs';
 import path from 'path';
 import { hideBin } from 'yargs/helpers';
-import yargs from 'yargs';
+import yargs from 'yargs'; // @ts-ignore
 import StylesheetBundler from '@arpadroid/stylesheet-bundler';
 import { spawn } from 'child_process';
 import chalk from 'chalk';
-import { log, logStyle, logTask } from '../utils/terminalLogger.mjs';
+import { log, logStyle } from '../utils/terminalLogger.mjs';
 import ProjectTest from './projectTest.mjs';
 import { glob } from 'glob';
 import { dts } from 'rollup-plugin-dts';
 
 const cwd = process.cwd();
-/** @type {{ watch?: boolean, slim?: boolean, deps?: string, minify: string, storybook: Record<string, unknown>, 'style-patterns': string, verbose:boolean, noTypes:boolean  }} */
-// @ts-ignore
+
+/** @type {CommandArgsType} */ // @ts-ignore
 const argv = yargs(hideBin(process.argv)).argv;
 const SLIM = Boolean(argv.slim ?? process.env.slim);
 const MINIFY = Boolean(argv.minify ?? process.env.minify);
@@ -170,15 +171,20 @@ class Project {
                     packages.splice(packages.indexOf(pkg), 1);
                 }
             });
+            // @ts-ignore
             return rv.concat(packages.filter(pkg => pkg !== false));
         }
-        return packages.filter(pkg => pkg !== false);
+        return /** @type {string[]} */ (packages.filter(pkg => pkg !== false));
     }
 
     async getBuildConfig(_config = {}) {
         this.fileConfig = (await this.getFileConfig()) || {};
         return mergeObjects(
             {
+                buildJS: true,
+                buildStyles: true,
+                build18n: true,
+                buildDeps: true,
                 buildTypes: false,
                 logHeading: true,
                 ...this.fileConfig
@@ -223,11 +229,12 @@ class Project {
         const slim = config.slim ?? SLIM;
         this.logBuild(config);
         await this.cleanBuild(config);
-        !slim && (await this.buildDependencies());
+        !slim && (await this.buildDependencies(config));
         await this.bundleStyles(config);
         await this.bundleI18n(config);
         process.env.ARPADROID_BUILD_CONFIG = JSON.stringify(config);
-        const rollupConfig = (await import(`${this.path}/rollup.config.mjs`)).default;
+        const rollupConfigFile = `${this.path}/rollup.config.mjs`;
+        const rollupConfig = fs.existsSync(rollupConfigFile) ? (await import(rollupConfigFile)).default : [];
         await this.rollup(rollupConfig, config);
         await this.buildTypes(rollupConfig, config);
         this.runStorybook(config);
@@ -383,6 +390,9 @@ class Project {
      * @returns {Promise<boolean>}
      */
     async bundleI18n(config) {
+        if (config?.buildI18n !== true) {
+            return true;
+        }
         const slim = config.slim ?? SLIM;
         if (slim) return true;
         const script = `${cwd}/node_modules/@arpadroid/i18n/scripts/compile.mjs`;
@@ -447,7 +457,15 @@ class Project {
         return existsSync(projectPath) ? projectPath : arpadroidPath;
     }
 
-    async buildDependencies() {
+    /**
+     * Builds the project dependencies.
+     * @param {BuildConfigType} config
+     * @returns {Promise<void>}
+     */
+    async buildDependencies(config) {
+        if (config?.buildDeps !== true) {
+            return;
+        }
         log.task(this.name, 'Building dependencies.');
         const projects = this.createDependencyInstances();
         process.env.arpadroid_slim = 'true';
@@ -473,9 +491,12 @@ class Project {
     /**
      * Bundles the project styles.
      * @param {BuildConfigType} config
-     * @returns {Promise<StylesheetBundler.ThemesBundler>}
+     * @returns {Promise<StylesheetBundler.ThemesBundler | boolean>}
      */
     async bundleStyles(config = {}) {
+        if (!config.buildStyles) {
+            return true;
+        }
         !config.slim && log.task(this.name, 'Bundling CSS.');
         const { path = this.path } = config;
         const slim = config.slim ?? SLIM;
@@ -510,6 +531,9 @@ class Project {
      * @returns {Promise<boolean>}
      */
     async rollup(rollupConfig, config = {}, heading = 'Rolling up') {
+        if (config?.buildJS !== true) {
+            return true;
+        }
         const { aliases = [] } = config;
         VERBOSE || (!config.slim && log.task(this.name, heading));
         const appBuild = rollupConfig[0];

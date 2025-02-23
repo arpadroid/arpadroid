@@ -10,7 +10,8 @@
         "test": "node ./scripts/test-projects.mjs --build --storybook --jest --ci",
         "install:project": "node ./scripts/install-projects.mjs",
         "stop:storybook:ci": "pm2 stop srv-storybook && pm2 delete srv-storybook",
-        "postinstall": "npx playwright install"
+        "postinstall": "npx playwright install",
+        "build": "node ./scripts/build-project.mjs --project=arpadroid --minify"
     },
     "repository": {
         "type": "git",

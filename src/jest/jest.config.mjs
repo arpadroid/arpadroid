@@ -5,7 +5,7 @@ export default {
     testEnvironment: 'jsdom',
     moduleFileExtensions: ['js', 'mjs'],
     transform: {
-        '^.+\\.(js|jsx)$': 'babel-jest',
+        // '^.+\\.(js|jsx)$': 'babel-jest',
         '^.+\\.(js|jsx)$': '<rootDir>/node_modules/babel-jest',
         '^.+\\.mjs$': 'babel-jest'
     },

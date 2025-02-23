@@ -6,7 +6,11 @@ import { Preview } from '@storybook/web-components';
 export type BuildConfigType = {
     processBuilds?: (builds: RollupOptions[]) => void;
     deps?: string[];
+    buildStyles?: boolean;
+    buildJS?: boolean;
     buildTypes?: boolean;
+    buildI18n?: boolean;
+    buildDeps?: boolean;
     path?: string;
     basePath?: string;
     style_patterns?: string | string[];

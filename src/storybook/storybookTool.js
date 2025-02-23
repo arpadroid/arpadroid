@@ -1,8 +1,11 @@
+/**
+ * @typedef {import('./storybookTool.types.js').StoryContextType} StoryContextType
+ */
 import { mergeObjects } from '@arpadroid/tools/object';
 
 /**
  * Returns the context object for the current story.
- * @returns {Record<string, unknown>} The story context.
+ * @returns {StoryContextType} The story context.
  */
 function getContext() {
     const _window = window.parent;
@@ -15,7 +18,7 @@ function getContext() {
 /**
  * Returns an object with data associated with the story.
  * @param {string} id - The story id.
- * @returns {Record<string, unknown> | undefined} The story context.
+ * @returns {StoryContextType | undefined} The story context.
  */
 export function getStoryContext(id = '') {
     if (!id) {
@@ -31,8 +34,8 @@ export function getStoryContext(id = '') {
 /**
  * Sets the context object for the specified story id.
  * @param {string} id - The story id.
- * @param {Record<string, unknown>} payload - The data to be set in the story context.
- * @returns {Record<string, unknown>} The updated story context.
+ * @param {StoryContextType} payload - The data to be set in the story context.
+ * @returns {StoryContextType} The updated story context.
  */
 export function setStoryContext(id, payload) {
     const context = getContext();
@@ -43,8 +46,8 @@ export function setStoryContext(id, payload) {
 /**
  * Edits the context object for the specified story id by merging the existing data with the new payload.
  * @param {string} id - The story id.
- * @param {Record<string, unknown>} payload - The data to be merged with the existing story context.
- * @returns {Record<string, unknown> | undefined} The updated story context.
+ * @param {StoryContextType} payload - The data to be merged with the existing story context.
+ * @returns {StoryContextType | undefined} The updated story context.
  */
 export function editStoryContext(id, payload) {
     const context = getContext();
@@ -71,7 +74,7 @@ export function getStoryContextValue(id, key) {
  * @param {string} id - The story id.
  * @param {string} key - The key to set the value in the story context.
  * @param {unknown} value - The value to be set in the story context.
- * @returns {Record<string, unknown>} The updated story context.
+ * @returns {StoryContextType | undefined} The updated story context.
  */
 export function setStoryContextValue(id, key, value) {
     return editStoryContext(id, { [key]: value });
