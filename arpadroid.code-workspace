@@ -5,6 +5,10 @@
 			"path": "."
 		},
 		{
+			"name": "module",
+			"path": "../module"
+		},
+		{
 			"name": "application",
 			"path": "../application"
 		},
