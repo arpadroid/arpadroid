@@ -3,7 +3,7 @@
 > Hi welcome to my lab, I am `arpadroid` (Andres Vaquero).
 
 I am passionate about new web technologies and the future of web development.
-My github showcases several projects focused in frontend web development, where I leverage the latest standards and web technologies, such as Web Components, in order to provide modern solutions to current problems.
+My github showcases several projects focused in frontend web development, where I leverage the latest standards and web technologies, such as Web Components, in order to provide modern solutions to cutting-edge problems.
  
 With over 18 years of experience in software engineering, I have transitioned from building web applications to architecting intelligent, scalable systems. 
 My background spans from Principal Engineering roles at SaaS leaders like Objective Corporation to delivering high-volume media platforms for companies like Switch Media and Nine.
